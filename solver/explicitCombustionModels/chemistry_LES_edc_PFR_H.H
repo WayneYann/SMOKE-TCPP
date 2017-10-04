@@ -41,17 +41,14 @@
 |   along with edcSMOKE. If not, see <http://www.gnu.org/licenses/>.      |
 |                                                                         |
 \*-----------------------------------------------------------------------*/
-Info<< "PFR calculations for time 0.0248" <<endl;
-int filterWidth=8;
-//const int n = 148635648;//mesh size (L case DNS HAWKES)
-	const int n = 864*1008*576/(pow(filterWidth,3));//mesh size for LES with filterwidth 12 compared to H case DNS
-	//const int n = 576*672*384/(pow(8,3));//mesh size for LES with filterwidth 8 compared to H case DNS
+	Info<< "PFR calculations for time 0.0248" <<endl;
+	int filterWidth=8;
+
+	const int n = 864*1008*576/(pow(filterWidth,3));
 	const int n0 =0;
 	const int n1 =0;
 	const int n2 =n;//100e6;
-	//scalar volume_cell = 3.375e-15;//cell volume size (L case DNS HAWKES)
 	scalar volume_cell = ((1.37*0.001)/72)*((1.37*0.001)/72)*((1.37*0.001)/72)*pow(filterWidth,3);//cell volume size 
-	//scalar volume_cell = ((1.37*0.001)/48)*((1.37*0.001)/48)*((1.37*0.001)/48)*pow(8,3);//cell volume size
 	scalarField T_LES_OF(n2,0.0);
 	Info<<"T_LES made"<<endl;
 	scalarField rho_LES_OF(n2,0.0);
@@ -96,7 +93,6 @@ int filterWidth=8;
 	Info<<"Y_LES_LES made"<<endl;
 	List<List<scalar> > R_LES(11, List<scalar>(n2) );
 	Info<<"R_LES_LES made"<<endl;
-	//scalarField T_LES_Final(n2,0.0);
 	scalarField QdotCells_LES(n2,0.0);
 	scalarField dQCells_LES(n2,0.0);
 	
@@ -221,12 +217,12 @@ int filterWidth=8;
 	#include "edc.H"
 	for(int celli=n0;celli<n2;celli++)
 	{
-				// Integration time
+			// Integration time
 			const double t0 = 0.;
 			double tf = 0.;
 			
 		const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
-		fine_structure_ode_pfr.Set(p_LES_OF[celli]);//fine_structure_ode_pfr.Set(pCells[celli]);
+		fine_structure_ode_pfr.Set(p_LES_OF[celli]);
 		
 		tf=tfStar_LES[celli];
 		//tf = (1.-gammaStar_LES[celli])/max(mDotStar_LES[celli], SMALL);
@@ -247,18 +243,13 @@ int filterWidth=8;
 		for(unsigned int i=0;i<ns;i++)
 			R_LES[i][celli]  = rho_LES_OF[celli]*edc_coefficient_LES[celli]*(YStar_LES[i][celli]-Y_LES[i][celli]);
 
-			if (counter%(int(0.001*n2)+1) == 0)
-			{
-
-					Info << "   Accomplished: " << counter << "/" << n2<< endl;
-
-			}
-			counter++;
+		if (counter%(int(0.001*n2)+1) == 0)
+		{
+			Info << "   Accomplished: " << counter << "/" << n2<< endl;
+		}
+		counter++;
 	}
-	//Info<<"Y O2 10"<<Y_LES[1][10]<<endl;
 					
-	//for H case
-	//writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0248/filterWidth8/jet_T_0248_edc_PFR_orig_modified.dat",n2,T_DNS_Final);
 	scalarField tmp_R_i_LES(n2,0.0);
 	for(int celli=n0;celli<n2;celli++) tmp_R_i_LES[celli]=R_LES[0][celli];
 	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0248/filterWidth8/jet_RR_H2_0248_edc_PFR_orig_modified.dat",n2,tmp_R_i_LES);
@@ -286,7 +277,7 @@ int filterWidth=8;
 	//writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0248/filterWidth8/jet_QdotCells_LES_0248_edc_PFR_orig_modified.dat",n2,QdotCells_LES);
 	//writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0248/filterWidth8/jet_dQCells_LES_0248_edc_PFR_orig_modified.dat",n2,dQCells_LES);
 
-scalarField tmp_tauChemSpecie_i_LES(n2,0.0);
+	scalarField tmp_tauChemSpecie_i_LES(n2,0.0);
 	for(int celli=n0;celli<n2;celli++) tmp_tauChemSpecie_i_LES[celli]=tauChemSpecie_LES[0][celli];
 	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0248/filterWidth8/jet_tauChemSpecie_H2_0248_edc_PFR_orig_modified.dat",n2,tmp_tauChemSpecie_i_LES);
 	for(int celli=n0;celli<n2;celli++) tmp_tauChemSpecie_i_LES[celli]=tauChemSpecie_LES[1][celli];
@@ -315,14 +306,12 @@ scalarField tmp_tauChemSpecie_i_LES(n2,0.0);
 	//writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0248/filterWidth8/jet_dQCells_LES_0248_edc_PFR_orig_modified.dat",n2,dQCells_LES);
 	
 	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0248/filterWidth8/jet_ReTau_LES_0248_edc_PFR_orig_modified.dat",n2,ReTau_LES);
-		writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0248/filterWidth8/jet_gammaL_LES_0248_edc_PFR_orig_modified.dat",n2,gammaL_LES);
-			writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0248/filterWidth8/jet_tauStar_LES_0248_edc_PFR_orig_modified.dat",n2,tauStar_LES);
-				writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0248/filterWidth8/jet_gammaStar_LES_0248_edc_PFR_orig_modified.dat",n2,gammaStar_LES);
-					writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0248/filterWidth8/jet_mDotStar_LES_0248_edc_PFR_orig_modified.dat",n2,mDotStar_LES);
-						writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0248/filterWidth8/jet_tfStar_LES_0248_edc_PFR_orig_modified.dat",n2,tfStar_LES);
-							writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0248/filterWidth8/jet_TStar_LES_0248_edc_PFR_orig_modified.dat",n2,TStar_LES);
-	
-	
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0248/filterWidth8/jet_gammaL_LES_0248_edc_PFR_orig_modified.dat",n2,gammaL_LES);
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0248/filterWidth8/jet_tauStar_LES_0248_edc_PFR_orig_modified.dat",n2,tauStar_LES);
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0248/filterWidth8/jet_gammaStar_LES_0248_edc_PFR_orig_modified.dat",n2,gammaStar_LES);
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0248/filterWidth8/jet_mDotStar_LES_0248_edc_PFR_orig_modified.dat",n2,mDotStar_LES);
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0248/filterWidth8/jet_tfStar_LES_0248_edc_PFR_orig_modified.dat",n2,tfStar_LES);
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0248/filterWidth8/jet_TStar_LES_0248_edc_PFR_orig_modified.dat",n2,TStar_LES);
 	
 	const double tEnd = OpenSMOKE::OpenSMOKEGetCpuTime();		
 	Info << "CPU time for chemistry (EDC): " << tEnd - tStart << " s " << endl;				
