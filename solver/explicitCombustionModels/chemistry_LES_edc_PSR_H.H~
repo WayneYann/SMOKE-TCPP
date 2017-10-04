@@ -255,8 +255,8 @@ int filterWidth=12;
 		
 		fine_structure_ode_psr.Set(T_LES_OF[celli], p_LES_OF[celli], omegaMean, omegaStar, hMean, gammaStar_LES[celli], mDotStar_LES[celli]);
 
-		//tf = numberOfResidenceTimes/max(mDotStar_LES[celli], SMALL);
-		tf = 1./max(mDotStar_LES[celli], SMALL);
+		tf = numberOfResidenceTimes/max(mDotStar_LES[celli], SMALL);
+		//tf = 1./max(mDotStar_LES[celli], SMALL);
 		//double reserve=tf;
 		//tf=reserve*reserve*reserve;
 		
