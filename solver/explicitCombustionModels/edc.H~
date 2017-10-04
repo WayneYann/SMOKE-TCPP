@@ -4,21 +4,20 @@ scalar Ctau = 0.40825;//0.5164;//
 //update on Sep 2017
 //it seems that by constrain on just gammaStar^2<1 not (gammaStar^2/(1-gammaStar^2)<1 the results improved
 //scalar maxGammaSquared =0.75487766248;//0.99999;// //const dimensionedScalar eSgsMin( "eSgsMin",   dimensionSet(0,2,-3,0,0,0,0), SMALL ); 
-scalar eSgsMin=SMALL;
 maxGammaL=0.75487766248;
 
+scalar eSgsMin=SMALL;
 Info<< "min/max(k)   =       " << min(k_SGS_LES_OF) << ", " << max(k_SGS_LES_OF) << endl;
 Info<< "min/max(epsilon)  = " << min(eps_SGS_LES_OF) << ", " << max(eps_SGS_LES_OF) << endl;
-
 //bound ( k_SGS_LES_OF, kSgsMin );   
 //bound ( eps_SGS_LES_OF, eSgsMin ); 
-forAll( eps_SGS_LES_OF ,i) if (eps_SGS_LES_OF[i]<0) eps_SGS_LES_OF[i]=fabs(eps_SGS_LES_OF[i]);
-//eps_SGS_LES_OF=fabs(eps_SGS_LES_OF);
-
-Info<< "min/max(epsilon) after bound  = " << min(eps_SGS_LES_OF) << ", " << max(eps_SGS_LES_OF) << endl;
- 
 //Info<< "min/max(k) after bound =       " << min(residualKineticEnergy_LES.internalField()) << ", " << max(residualKineticEnergy_LES.internalField()) << endl;
 //Info<< "min/max(epsilon) after bound= " << min(epsilonSGS_LES.internalField()) << ", " << max(epsilonSGS_LES.internalField()) << endl;
+
+forAll( eps_SGS_LES_OF ,i) if (eps_SGS_LES_OF[i]<0) eps_SGS_LES_OF[i]=fabs(eps_SGS_LES_OF[i]);
+//eps_SGS_LES_OF=fabs(eps_SGS_LES_OF);
+Info<< "min/max(epsilon) after bound  = " << min(eps_SGS_LES_OF) << ", " << max(eps_SGS_LES_OF) << endl;
+ 
 
 ReTau_LES = k_SGS_LES_OF * k_SGS_LES_OF / eps_SGS_LES_OF / nu_LES_OF ; 
 
@@ -32,12 +31,11 @@ tauStar_LES = pow( nu_LES_OF / eps_SGS_LES_OF , 0.5);
 //use gammaL^2 in the nominator
 //use gammaL^3 in denominator
 
+
 gammaL_LES= min(maxGammaL,gammaL_LES);//gammaStar_LES=0.6;//
 
 gammaStar_LES = pow(gammaL_LES, 2.);
-//Info<< "min/max(gammaStar) before clipping =  " << min(gammaStar_LES) << ", " << max(gammaStar_LES) << endl;
 //gammaStar_LES= min(maxGammaSquared,gammaStar_LES);//gammaStar_LES=0.6;//
-//Info<< "min/max(gammaStar) after clipping =  " << min(gammaStar_LES) << ", " << max(gammaStar_LES) << endl;
 
 mDotStar_LES  = (1./Ctau)/tauStar_LES;//mDotStar_LES  = pow((1./Ctau)/tauStar_LES,1./3.);
 

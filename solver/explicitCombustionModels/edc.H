@@ -21,7 +21,10 @@ Info<< "min/max(epsilon) after bound  = " << min(eps_SGS_LES_OF) << ", " << max(
 
 ReTau_LES = k_SGS_LES_OF * k_SGS_LES_OF / eps_SGS_LES_OF / nu_LES_OF ; 
 
-gammaL_LES = Ccsi * pow(  nu_LES_OF * eps_SGS_LES_OF / pow( k_SGS_LES_OF, 2.0), 0.25);		
+//gammaL_LES = Ccsi * pow(  nu_LES_OF * eps_SGS_LES_OF / pow( k_SGS_LES_OF, 2.0), 0.25);		
+//Fureby mod
+gammaL_LES = 1.2128 * pow(  nu_LES_OF * eps_SGS_LES_OF / pow( k_SGS_LES_OF, 2.0), 0.25);		
+
 tauStar_LES = pow( nu_LES_OF / eps_SGS_LES_OF , 0.5);
 //bound ( tauStar_LES, tauMin );
 //Mod: July 2017 Ali
@@ -37,9 +40,12 @@ gammaL_LES= min(maxGammaL,gammaL_LES);//gammaStar_LES=0.6;//
 gammaStar_LES = pow(gammaL_LES, 2.);
 //gammaStar_LES= min(maxGammaSquared,gammaStar_LES);//gammaStar_LES=0.6;//
 
-mDotStar_LES  = (1./Ctau)/tauStar_LES;//mDotStar_LES  = pow((1./Ctau)/tauStar_LES,1./3.);
+//mDotStar_LES  = (1./Ctau)/tauStar_LES;//mDotStar_LES  = pow((1./Ctau)/tauStar_LES,1./3.);
+//Fureby mod
+mDotStar_LES  = 1.27/tauStar_LES;//mDotStar_LES  = pow((1./Ctau)/tauStar_LES,1./3.);
 
 tfStar_LES =(1.)/(mDotStar_LES);// (1.-gammaStar_LES)/(mDotStar_LES);
+
 //tfStar_LES =2e-09*pow(filterWidth,3.);// 
 //tfStar_LES = (1.-pow(gammaL_LES, 3.))/(mDotStar_LES);
 
