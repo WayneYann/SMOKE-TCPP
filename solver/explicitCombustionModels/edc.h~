@@ -1,0 +1,47 @@
+scalar Ccsi = 2.1377;
+scalar Ctau = 0.40825;
+scalar maxGammaSquared = 0.75487766248;
+
+Info<< "min/max(k)   =       " << min(k_SGS_DNS_OF) << ", " << max(k_SGS_DNS_OF) << endl;
+Info<< "min/max(epsilon)  = " << min(eps_SGS_DNS_OF) << ", " << max(eps_SGS_DNS_OF) << endl;
+
+//bound ( k_SGS_DNS_OF, kSgsMin );   
+//bound ( eps_SGS_DNS_OF, eSgsMin );  
+ 
+//Info<< "min/max(k) after bound =       " << min(residualKineticEnergy_LES.internalField()) << ", " << max(residualKineticEnergy_LES.internalField()) << endl;
+//Info<< "min/max(epsilon) after bound= " << min(epsilonSGS_LES.internalField()) << ", " << max(epsilonSGS_LES.internalField()) << endl;
+
+ReTau_LES = k_SGS_DNS_OF * k_SGS_DNS_OF / eps_SGS_DNS_OF / nu_DNS_OF ; 
+
+gammaL_LES = Ccsi * pow(  nu_DNS_OF * eps_SGS_DNS_OF / pow( k_SGS_DNS_OF, 2.0), 0.25);		
+tauStar_LES = pow( nu_DNS_OF / eps_SGS_DNS_OF , 0.5);
+//bound ( tauStar_LES, tauMin );
+gammaStar_LES = pow(gammaL_LES, 2.);
+
+Info<< "min/max(gammaStar) before clipping =  " << min(gammaStar_LES) << ", " << max(gammaStar_LES) << endl;
+
+gammaStar_LES = min(maxGammaSquared,gammaStar_LES);
+
+mDotStar_LES  = (1./Ctau)/tauStar_LES;
+tfStar_LES = (1.-gammaStar_LES)/(mDotStar_LES);
+//tfStar_tfFlow_LES = (1.-gammaStar_LES)/(mDotStar_LES);
+Info<< "min/max(tfStar_LES) =       " << min(tfStar_LES) << ", " << max(tfStar_LES) << endl;
+
+
+edc_coefficient_LES = rho_DNS_OF *gammaStar_LES*mDotStar_LES/(1.-gammaStar_LES);
+
+
+
+
+			//tauStar = Ctau * sqrt( mu/rho / (epsilon+epsilonsmall_) );
+			//mDotStar = 1./tauStar;
+
+			// Fine structure properties: volumetric fraction
+			//gammaL = Ccsi * pow025(  mu/rho * epsilon / sqr(k+ksmall_));	
+			//gammaL = min(maxGammaL, gammaL);
+			//gammaStar = pow(gammaL,edc_exp);
+		
+
+		// EDC coefficient
+		//edc_coefficient = rho * mDotStar * gammaStar / (1.-gammaStar);
+		//tfStar = (1.-gammaStar)/(mDotStar);

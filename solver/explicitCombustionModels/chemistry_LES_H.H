@@ -1,0 +1,543 @@
+/*-----------------------------------------------------------------------*\
+|                  _       _____ __  __  ____  _  ________                |
+|                 | |     / ____|  \/  |/ __ \| |/ /  ____|               |
+|          ___  __| | ___| (___ | \  / | |  | | ' /| |__                  |
+|         / _ \/ _` |/ __|\___ \| |\/| | |  | |  < |  __|                 |
+|        |  __/ (_| | (__ ____) | |  | | |__| | . \| |____                |
+|         \___|\__,_|\___|_____/|_|  |_|\____/|_|\_\______|               |
+|                                                                         |
+|                                                                         |
+|   Authors: A. Cuoci, M.R. Malik, Z. Li, A. Parente                      |
+|                                                                         |
+|   Contacts: Alberto Cuoci                                               |
+|   email: alberto.cuoci@polimi.it                                        |
+|   Department of Chemistry, Materials and Chemical Engineering           |
+|   Politecnico di Milano                                                 |
+|   P.zza Leonardo da Vinci 32, 20133 Milano (Italy)                      |
+|                                                                         |
+|   Contacts: Mohammad Rafi Malik, Zhiyi Li, Alessandro Parente           |
+|   Aero-Thermo-Mechanical Department                                     |
+|   Université Libre de Bruxelles                                         |
+|   Avenue F. D. Roosevelt 50, 1050 Bruxelles (Belgium)                   |
+|                                                                         |
+|-------------------------------------------------------------------------|
+|                                                                         |
+|   This file is part of edcSMOKE solver.                                 |
+|                                                                         |
+|	License                                                           |
+|                                                                         |
+|   Copyright(C) 2017-2014 A. Cuoci, A. Parente                           |
+|   edcSMOKE is free software: you can redistribute it and/or modify      |
+|   it under the terms of the GNU General Public License as published by  |
+|   the Free Software Foundation, either version 3 of the License, or     |
+|   (at your option) any later version.                                   |
+|                                                                         |
+|   edcSMOKE is distributed in the hope that it will be useful,           |
+|   but WITHOUT ANY WARRANTY; without even the implied warranty of        |
+|   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         |
+|   GNU General Public License for more details.                          |
+|                                                                         |
+|   You should have received a copy of the GNU General Public License     |
+|   along with edcSMOKE. If not, see <http://www.gnu.org/licenses/>.      |
+|                                                                         |
+\*-----------------------------------------------------------------------*/
+//const int n = 148635648;//mesh size (L case DNS HAWKES)
+int filterWidth=12;
+	const int n = 864*1008*576/(pow(filterWidth,3));//mesh size for LES with filterwidth delta compared to H case DNS
+	const int n0 =0;
+	const int n1 =0;
+	const int n2 =n;//100e6;
+	scalar volume_cell = ((1.37*0.001)/72)*((1.37*0.001)/72)*((1.37*0.001)/72)*pow(filterWidth,3);//cell volume size 
+	scalarField T_LES_OF(n2,0.0);
+	Info<<"T_LES made"<<endl;
+	scalarField rho_LES_OF(n2,0.0);
+	Info<<"rho_LES made"<<endl;
+	scalarField p_LES_OF(n2,0.0);
+	Info<<"p_LES made"<<endl;
+	
+	////////////////////////////////////
+	//Added on Sep2017 to test PaSRreactions
+	scalarField eps_SGS_LES_OF(n2,0.0);
+	Info<<"eps_SGS_LES made"<<endl;
+	
+	scalarField epsOrig_LES_OF(n2,0.0);
+	Info<<"epsOrig_LES made"<<endl;
+	
+	
+	scalarField k_SGS_LES_OF(n2,0.0);
+	Info<<"k_SGS_LES made"<<endl;
+	scalarField nu_LES_OF(n2,0.0);
+	Info<<"nu_LES made"<<endl;
+		
+	scalarField tauMix_LES(n2,0.0);
+	Info<<"tauMix_LES made"<<endl;
+	scalarField kappa_LES(n2,0.0);
+	Info<<"kappa_LES made"<<endl;
+	List<List<scalar> > kappar_LES(kineticsMapXML->NumberOfReactions(), List<scalar>(n2) );
+	Info<<"kappar_LES made"<<endl;
+	
+	
+	scalarField ReTau_LES(n2,0.0);
+	Info<<"ReTau_LES made"<<endl;
+	
+	scalarField tfStar_LES(n2,0.0);
+	Info<<"tfStar_LES made"<<endl;		
+	
+	List<List<scalar> > YStar_LES(11, List<scalar>(n2) ); 
+	Info<<"YStar_LES made"<<endl;
+	
+	scalarField TStar_LES(n2,0.0);
+	Info<<"TStar_LES made"<<endl;
+	
+	scalarField tauChem_LES(n2,0.0);
+	Info<<"tauChem_LES made"<<endl;
+	/////////////////////////////////
+	//end
+
+	List<List<scalar> > Y_LES(11, List<scalar>(n2) ); 
+	Info<<"Y_LES made"<<endl;
+	List<List<scalar> > R_LES(11, List<scalar>(n2) );
+	Info<<"R_LES made"<<endl;
+	scalarField QdotCells_LES(n2,0.0);
+	scalarField dQCells_LES(n2,0.0);
+	
+	//Added by Ali on 1 Aug 2017 to get RR
+	List<List<scalar> > ReactionRates_LES(kineticsMapXML->NumberOfReactions(), List<scalar>(n2) );
+	Info<<"ReactionRates_LES made"<<endl;
+	
+	List<List<scalar> > Taur_LES(kineticsMapXML->NumberOfReactions(), List<scalar>(n2));
+	
+	
+	{
+		float* T_LES=readFloatBinaryFile("/scratch/Ali/Filtered_Interpolated_RAW_DNS_HAWKES_DATA_le/HIGH/jet_0055/jet_Filtered12_T_0055.dat",n);
+		Info<<T_LES[10]<<endl;
+
+		for(int celli=n0;celli<n2;celli++) T_LES_OF[celli]=T_LES[celli+n1];
+		delete T_LES;T_LES=NULL;
+	
+		float* rho_LES=readFloatBinaryFile("/scratch/Ali/Filtered_Interpolated_RAW_DNS_HAWKES_DATA_le/HIGH/jet_0055/jet_Filtered12_rho_0055.dat",n);
+		Info<<rho_LES[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) rho_LES_OF[celli]=rho_LES[celli+n1];
+		delete rho_LES;rho_LES=NULL;
+	
+		float* p_LES=readFloatBinaryFile("/scratch/Ali/Filtered_Interpolated_RAW_DNS_HAWKES_DATA_le/HIGH/jet_0055/jet_Filtered12_P_0055.dat",n);
+		Info<<p_LES[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) p_LES_OF[celli]=p_LES[celli+n1];
+		delete p_LES;p_LES=NULL;
+	
+		float* Y_CO2_LES=readFloatBinaryFile("/scratch/Ali/Filtered_Interpolated_RAW_DNS_HAWKES_DATA_le/HIGH/jet_0055/jet_Filtered12_Y_CO2_0055.dat",n);
+		Info<<Y_CO2_LES[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_LES[8][celli]=Y_CO2_LES[celli+n1];
+		delete Y_CO2_LES;Y_CO2_LES=NULL; 
+		
+		float* Y_CO_LES=readFloatBinaryFile("/scratch/Ali/Filtered_Interpolated_RAW_DNS_HAWKES_DATA_le/HIGH/jet_0055/jet_Filtered12_Y_CO_0055.dat",n);
+		Info<<Y_CO_LES[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_LES[7][celli]=Y_CO_LES[celli+n1];
+		delete Y_CO_LES;Y_CO_LES=NULL;
+		
+		float* Y_H_LES=readFloatBinaryFile("/scratch/Ali/Filtered_Interpolated_RAW_DNS_HAWKES_DATA_le/HIGH/jet_0055/jet_Filtered12_Y_H_0055.dat",n);
+		Info<<Y_H_LES[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_LES[5][celli]=Y_H_LES[celli+n1];
+		delete Y_H_LES;Y_H_LES=NULL;
+	
+		float* Y_H2_LES=readFloatBinaryFile("/scratch/Ali/Filtered_Interpolated_RAW_DNS_HAWKES_DATA_le/HIGH/jet_0055/jet_Filtered12_Y_H2_0055.dat",n);
+		Info<<Y_H2_LES[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_LES[0][celli]=Y_H2_LES[celli+n1];
+		delete Y_H2_LES;Y_H2_LES=NULL;
+	
+		float* Y_H2O_LES=readFloatBinaryFile("/scratch/Ali/Filtered_Interpolated_RAW_DNS_HAWKES_DATA_le/HIGH/jet_0055/jet_Filtered12_Y_H2O_0055.dat",n);	
+		Info<<Y_H2O_LES[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_LES[4][celli]=Y_H2O_LES[celli+n1];
+		delete Y_H2O_LES;Y_H2O_LES=NULL;
+	
+		float* Y_HCO_LES=readFloatBinaryFile("/scratch/Ali/Filtered_Interpolated_RAW_DNS_HAWKES_DATA_le/HIGH/jet_0055/jet_Filtered12_Y_HCO_0055.dat",n);
+		Info<<Y_HCO_LES[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_LES[9][celli]=Y_HCO_LES[celli+n1];
+		delete Y_HCO_LES;Y_HCO_LES=NULL;
+	
+		float* Y_HO2_LES=readFloatBinaryFile("/scratch/Ali/Filtered_Interpolated_RAW_DNS_HAWKES_DATA_le/HIGH/jet_0055/jet_Filtered12_Y_HO2_0055.dat",n);
+		Info<<Y_HO2_LES[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_LES[6][celli]=Y_HO2_LES[celli+n1];
+		delete Y_HO2_LES;Y_HO2_LES=NULL;
+	
+		float* Y_O_LES=readFloatBinaryFile("/scratch/Ali/Filtered_Interpolated_RAW_DNS_HAWKES_DATA_le/HIGH/jet_0055/jet_Filtered12_Y_O_0055.dat",n);
+		Info<<Y_O_LES[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_LES[2][celli]=Y_O_LES[celli+n1];
+		delete Y_O_LES;Y_O_LES=NULL;
+	
+		float* Y_O2_LES=readFloatBinaryFile("/scratch/Ali/Filtered_Interpolated_RAW_DNS_HAWKES_DATA_le/HIGH/jet_0055/jet_Filtered12_Y_O2_0055.dat",n);
+		Info<<Y_O2_LES[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_LES[1][celli]=Y_O2_LES[celli+n1];
+		delete Y_O2_LES;Y_O2_LES=NULL;
+	
+		float* Y_OH_LES=readFloatBinaryFile("/scratch/Ali/Filtered_Interpolated_RAW_DNS_HAWKES_DATA_le/HIGH/jet_0055/jet_Filtered12_Y_OH_0055.dat",n);	
+		Info<<Y_OH_LES[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_LES[3][celli]=Y_OH_LES[celli+n1];
+		delete Y_OH_LES;Y_OH_LES=NULL;
+	
+		for(int celli=n0;celli<n2;celli++)
+		{
+			scalar sum=0.0;
+			for(int i=0;i<10;i++)
+			{
+				sum+=Y_LES[i][celli];
+			}
+			Y_LES[10][celli]=1.0-sum;
+		}
+		
+		//Added to test PaSRReactions
+		////////////////////////////
+		float* nu_LES=readFloatBinaryFile("/scratch/Ali/Filtered_Interpolated_RAW_DNS_HAWKES_DATA_le/HIGH/jet_0055/jet_Filtered12_nu_0055.dat",n);
+		Info<<nu_LES[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) nu_LES_OF[celli]=nu_LES[celli+n1];
+		delete nu_LES;nu_LES=NULL;
+		
+	
+		float* eps_SGS_LES=readFloatBinaryFile("/scratch/Ali/Filtered_Interpolated_RAW_DNS_HAWKES_DATA_le/HIGH/jet_0055/jet_Filtered12_eSGS_0055.dat",n);
+		Info<<eps_SGS_LES[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) eps_SGS_LES_OF[celli]=eps_SGS_LES[celli+n1];
+		delete eps_SGS_LES;eps_SGS_LES=NULL;
+		
+				float* epsOrig_LES=readFloatBinaryFile("/scratch/Ali/Filtered_Interpolated_RAW_DNS_HAWKES_DATA_le/HIGH/jet_0055/jet_Filtered12_epsOrig_0055.dat",n);
+		Info<<epsOrig_LES[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) epsOrig_LES_OF[celli]=epsOrig_LES[celli+n1];
+		delete epsOrig_LES;epsOrig_LES=NULL;
+		
+		
+		float* k_SGS_LES=readFloatBinaryFile("/scratch/Ali/Filtered_Interpolated_RAW_DNS_HAWKES_DATA_le/HIGH/jet_0055/jet_Filtered12_residualKineticEnergy_0055.dat",n);
+		Info<<k_SGS_LES[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) k_SGS_LES_OF[celli]=k_SGS_LES[celli+n1];
+		delete k_SGS_LES;k_SGS_LES=NULL;
+		////////////////////////////
+
+	}
+	
+	unsigned int counter = 0;
+	const int unsigned ns = thermodynamicsMapXML->NumberOfSpecies();
+	const int unsigned nr = kineticsMapXML->NumberOfReactions();
+	
+	//OpenSMOKE::OpenSMOKEVectorDouble omegaMean(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble omegaStar_(ns);
+	//OpenSMOKE::OpenSMOKEVectorDouble xMean(ns);
+	//OpenSMOKE::OpenSMOKEVectorDouble cMean(ns);
+	//OpenSMOKE::OpenSMOKEVectorDouble h_species(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble xStar_(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble cStar_(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble RStar_(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble rStar_(ns);
+	
+	
+	//Added to test PaSRReactions
+	/////////////////////////////
+	scalar eSgsMin=SMALL;
+	double filterSize=1.37*0.001/72*filterWidth;
+	Info<< "min/max(k)   =       " << min(k_SGS_LES_OF) << ", " << max(k_SGS_LES_OF) << endl;
+	Info<< "min/max(epsilon)  = " << min(eps_SGS_LES_OF) << ", " << max(eps_SGS_LES_OF) << endl;
+	//bound ( k_SGS_LES_OF, kSgsMin );   
+	//bound ( eps_SGS_LES_OF, eSgsMin ); 
+	forAll( eps_SGS_LES_OF ,i) if (eps_SGS_LES_OF[i]<0) eps_SGS_LES_OF[i]=fabs(eps_SGS_LES_OF[i]);
+	//eps_SGS_LES_OF=fabs(eps_SGS_LES_OF);
+	Info<< "min/max(epsilon) after bound  = " << min(eps_SGS_LES_OF) << ", " << max(eps_SGS_LES_OF) << endl;
+	ReTau_LES = k_SGS_LES_OF * k_SGS_LES_OF / eps_SGS_LES_OF / nu_LES_OF ; 
+	//tauMix_LES =  sqrt( (1.2247*filterSize/sqrt(k_SGS_LES_OF))*sqrt(nu_LES_OF/epsOrig_LES_OF) ); //geometrical mean of Kolmogorov scale and filter size scale
+     tauMix_LES =  sqrt( (1.2247*filterSize/sqrt(k_SGS_LES_OF))*sqrt(nu_LES_OF/eps_SGS_LES_OF) ); //geometrical mean of Kolmogorov scale and filter size scale
+	////////////////////////////
+
+		
+	double hMean, MWMean;
+	const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
+			Info<<"number of reactions = "<<kineticsMapXML->NumberOfReactions()<<endl;
+			
+	
+	
+	for(int celli=n0;celli<n2;celli++)
+	{
+		const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
+		fine_structure_ode_pfr.Set(p_LES_OF[celli]);//fine_structure_ode_pfr.Set(pCells[celli]);
+		
+		//const double t0 = 0.;
+		//double tf = 2e-09;//Ali 0.;	
+		for(unsigned int i=0;i<ns;i++)
+				omegaStar_[i+1] = Y_LES[i][celli];
+				
+		// Convert to mole fractions
+		thermodynamicsMapXML->MoleFractions_From_MassFractions(xStar_.GetHandle(), MWMean, omegaStar_.GetHandle());
+
+		const double TStar_ = T_LES_OF[celli];
+		double P_Pa_=p_LES_OF[celli];
+		double MWStar_=MWMean;
+		double cTotStar_ = P_Pa_/(PhysicalConstants::R_J_kmol * TStar_);
+		double rhoStar_ = cTotStar_*MWStar_;
+		Product(cTotStar_, xStar_, &cStar_);
+		thermodynamicsMapXML->SetTemperature(TStar_);
+		thermodynamicsMapXML->SetPressure(P_Pa_);
+		double cpStar_ = thermodynamicsMapXML->cpMolar_Mixture_From_MoleFractions(xStar_.GetHandle());
+		cpStar_/=MWStar_;
+		
+		
+		kineticsMapXML->SetTemperature(TStar_);
+		kineticsMapXML->SetPressure(P_Pa_);
+		kineticsMapXML->ReactionEnthalpiesAndEntropies();
+		kineticsMapXML->KineticConstants();
+		kineticsMapXML->ReactionRates(cStar_.GetHandle());
+		kineticsMapXML->FormationRates(RStar_.GetHandle());
+		const double QRStar_ = kineticsMapXML->HeatRelease(RStar_.GetHandle());
+
+		for(unsigned int i=0;i<ns;i++)
+			R_LES[i][celli] = RStar_[i+1]*thermodynamicsMapXML->MW(i);
+		
+		
+		
+		//Addedd by Ali 1 Aug 2017 to get RR
+		
+
+		OpenSMOKE::OpenSMOKEVectorDouble rrNet;	
+		ChangeDimensions(kineticsMapXML->NumberOfReactions(), &rrNet, true);
+		kineticsMapXML->GiveMeReactionRates(rrNet.GetHandle());
+		for(unsigned int k=0;k<kineticsMapXML->NumberOfReactions();k++)
+		{
+			ReactionRates_LES[k][celli] = rrNet[k+1];
+		}
+		
+		Eigen::MatrixXd Jacob(nr, ns);	
+		kineticsMapXML->DerivativesOfReactionRates(cStar_.GetHandle(), &Jacob);
+		Eigen::MatrixXd nu_(nr, ns);						
+		{
+			nu_.setZero();
+
+			// Loop over all the reactions (product side)
+			for (int k = 0; k < kineticsMapXML->stoichiometry().stoichiometric_matrix_products().outerSize(); ++k)
+			{
+				// Loop over all the non-zero stoichiometric coefficients (product side) of reaction k
+				for (Eigen::SparseMatrix<double>::InnerIterator it(kineticsMapXML->stoichiometry().stoichiometric_matrix_products(), k); it; ++it)
+				{
+					nu_(it.row(), it.col()) += it.value();
+				}
+			}
+
+			// Loop over all the reactions (product side)
+			for (int k = 0; k < kineticsMapXML->stoichiometry().stoichiometric_matrix_reactants().outerSize(); ++k)
+			{
+				// Loop over all the non-zero stoichiometric coefficients (product side) of reaction k
+				for (Eigen::SparseMatrix<double>::InnerIterator it(kineticsMapXML->stoichiometry().stoichiometric_matrix_reactants(), k); it; ++it)
+				{
+					nu_(it.row(), it.col()) -= it.value();
+				}
+			}
+		}
+		//dot product
+		for(unsigned int k=0;k<nr;k++)
+		{
+			for(unsigned int j=0;j<ns;j++)
+			{
+				Taur_LES[k][celli]+=Jacob(k,j)*nu_(k,j);
+			}
+			if(Taur_LES[k][celli]!=0)
+			{
+				Taur_LES[k][celli]=fabs(1.0/Taur_LES[k][celli]);
+			}
+			else
+			{
+				Info<<"Taur for reaction"<<k+1<<" is 0 "<<endl;
+				Taur_LES[k][celli]=1.0/1e-20;
+				
+			}
+		
+		}
+		//Added by Ali on Sep 2017 to get kappa
+		scalar threshold_chemical_time = 0.1;
+		scalar threshold_temperature_chemical_time = 503.;
+		CharacteristicChemicalTimes::CharacteristicChemicalTimesType characteristic_chemical_times_type = CharacteristicChemicalTimes::CHEMICAL_TIMES_EIGENVALUES;
+		//CharacteristicChemicalTimes::CharacteristicChemicalTimesType characteristic_chemical_times_type = CharacteristicChemicalTimes::CHEMICAL_TIMES_FORMATION_RATES;
+		CharacteristicChemicalTimes* chemicalTimes = new CharacteristicChemicalTimes(*thermodynamicsMapXML, *kineticsMapXML);
+		chemicalTimes->SetThresholdChemicalTime(threshold_chemical_time);
+		chemicalTimes->SetType(characteristic_chemical_times_type);
+		chemicalTimes->SetThresholdTemperatureChemicalTime(threshold_temperature_chemical_time);
+		const double tauLocal = chemicalTimes->CalculateCharacteristicChemicalTime(TStar_,p_LES_OF[celli],omegaStar_);
+		const scalar kappaLocal = tauLocal/(tauLocal+tauMix_LES[celli]);
+		kappa_LES[celli]=kappaLocal;
+		//Added for PaSRReactions on Sep2017
+		for(unsigned int k=0;k<kineticsMapXML->NumberOfReactions();k++)
+		{
+			kappar_LES[k][celli] = Taur_LES[k][celli]/(Taur_LES[k][celli]+tauMix_LES[celli]);
+		}
+		// end modification
+			
+		QdotCells_LES[celli] = QRStar_;
+		dQCells_LES[celli] = QRStar_ * volume_cell;	
+		if (counter%(int(0.001*n2)+1) == 0)
+		{
+			Info << "   Accomplished: " << counter << "/" << n2<< endl;
+
+		}
+		counter++;
+	}
+					
+	//for H case
+	//writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_T_0055_AREN.dat",n2,T_LES_Final);
+	scalarField tmp_R_i_LES(n2,0.0);
+	for(int celli=n0;celli<n2;celli++) tmp_R_i_LES[celli]=R_LES[0][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_RR_H2_0055_AREN.dat",n2,tmp_R_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_R_i_LES[celli]=R_LES[1][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_RR_O2_0055_AREN.dat",n2,tmp_R_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_R_i_LES[celli]=R_LES[2][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_RR_O_0055_AREN.dat",n2,tmp_R_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_R_i_LES[celli]=R_LES[3][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_RR_OH_0055_AREN.dat",n2,tmp_R_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_R_i_LES[celli]=R_LES[4][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_RR_H2O_0055_AREN.dat",n2,tmp_R_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_R_i_LES[celli]=R_LES[5][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_RR_H_0055_AREN.dat",n2,tmp_R_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_R_i_LES[celli]=R_LES[6][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_RR_HO2_0055_AREN.dat",n2,tmp_R_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_R_i_LES[celli]=R_LES[7][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_RR_CO_0055_AREN.dat",n2,tmp_R_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_R_i_LES[celli]=R_LES[8][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_RR_CO2_0055_AREN.dat",n2,tmp_R_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_R_i_LES[celli]=R_LES[9][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_RR_HCO_0055_AREN.dat",n2,tmp_R_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_R_i_LES[celli]=R_LES[10][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_RR_N2_0055_AREN.dat",n2,tmp_R_i_LES);
+
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_QdotCells_LES_0055_AREN.dat",n2,QdotCells_LES);
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_dQCells_LES_0055_AREN.dat",n2,dQCells_LES);
+
+
+//Added by ali on 1 Aug 2017 to get RR
+scalarField tmp_ReactionRates_i_LES(n2,0.0);
+	for(int celli=n0;celli<n2;celli++) tmp_ReactionRates_i_LES[celli]=ReactionRates_LES[0][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_ReactionRates_1_0055_AREN.dat",n2,tmp_ReactionRates_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_ReactionRates_i_LES[celli]=ReactionRates_LES[1][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_ReactionRates_2_0055_AREN.dat",n2,tmp_ReactionRates_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_ReactionRates_i_LES[celli]=ReactionRates_LES[2][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_ReactionRates_3_0055_AREN.dat",n2,tmp_ReactionRates_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_ReactionRates_i_LES[celli]=ReactionRates_LES[3][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_ReactionRates_4_0055_AREN.dat",n2,tmp_ReactionRates_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_ReactionRates_i_LES[celli]=ReactionRates_LES[4][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_ReactionRates_5_0055_AREN.dat",n2,tmp_ReactionRates_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_ReactionRates_i_LES[celli]=ReactionRates_LES[5][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_ReactionRates_6_0055_AREN.dat",n2,tmp_ReactionRates_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_ReactionRates_i_LES[celli]=ReactionRates_LES[6][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_ReactionRates_7_0055_AREN.dat",n2,tmp_ReactionRates_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_ReactionRates_i_LES[celli]=ReactionRates_LES[7][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_ReactionRates_8_0055_AREN.dat",n2,tmp_ReactionRates_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_ReactionRates_i_LES[celli]=ReactionRates_LES[8][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_ReactionRates_9_0055_AREN.dat",n2,tmp_ReactionRates_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_ReactionRates_i_LES[celli]=ReactionRates_LES[9][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_ReactionRates_10_0055_AREN.dat",n2,tmp_ReactionRates_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_ReactionRates_i_LES[celli]=ReactionRates_LES[10][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_ReactionRates_11_0055_AREN.dat",n2,tmp_ReactionRates_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_ReactionRates_i_LES[celli]=ReactionRates_LES[11][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_ReactionRates_12_0055_AREN.dat",n2,tmp_ReactionRates_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_ReactionRates_i_LES[celli]=ReactionRates_LES[12][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_ReactionRates_13_0055_AREN.dat",n2,tmp_ReactionRates_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_ReactionRates_i_LES[celli]=ReactionRates_LES[13][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_ReactionRates_14_0055_AREN.dat",n2,tmp_ReactionRates_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_ReactionRates_i_LES[celli]=ReactionRates_LES[14][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_ReactionRates_15_0055_AREN.dat",n2,tmp_ReactionRates_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_ReactionRates_i_LES[celli]=ReactionRates_LES[15][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_ReactionRates_16_0055_AREN.dat",n2,tmp_ReactionRates_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_ReactionRates_i_LES[celli]=ReactionRates_LES[16][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_ReactionRates_17_0055_AREN.dat",n2,tmp_ReactionRates_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_ReactionRates_i_LES[celli]=ReactionRates_LES[17][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_ReactionRates_18_0055_AREN.dat",n2,tmp_ReactionRates_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_ReactionRates_i_LES[celli]=ReactionRates_LES[18][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_ReactionRates_19_0055_AREN.dat",n2,tmp_ReactionRates_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_ReactionRates_i_LES[celli]=ReactionRates_LES[19][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_ReactionRates_20_0055_AREN.dat",n2,tmp_ReactionRates_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_ReactionRates_i_LES[celli]=ReactionRates_LES[20][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_ReactionRates_21_0055_AREN.dat",n2,tmp_ReactionRates_i_LES);
+
+
+scalarField tmp_Taur_i_LES(n2,0.0);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_LES[celli]=Taur_LES[0][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_Taur_1_0055_AREN.dat",n2,tmp_Taur_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_LES[celli]=Taur_LES[1][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_Taur_2_0055_AREN.dat",n2,tmp_Taur_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_LES[celli]=Taur_LES[2][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_Taur_3_0055_AREN.dat",n2,tmp_Taur_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_LES[celli]=Taur_LES[3][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_Taur_4_0055_AREN.dat",n2,tmp_Taur_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_LES[celli]=Taur_LES[4][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_Taur_5_0055_AREN.dat",n2,tmp_Taur_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_LES[celli]=Taur_LES[5][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_Taur_6_0055_AREN.dat",n2,tmp_Taur_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_LES[celli]=Taur_LES[6][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_Taur_7_0055_AREN.dat",n2,tmp_Taur_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_LES[celli]=Taur_LES[7][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_Taur_8_0055_AREN.dat",n2,tmp_Taur_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_LES[celli]=Taur_LES[8][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_Taur_9_0055_AREN.dat",n2,tmp_Taur_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_LES[celli]=Taur_LES[9][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_Taur_10_0055_AREN.dat",n2,tmp_Taur_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_LES[celli]=Taur_LES[10][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_Taur_11_0055_AREN.dat",n2,tmp_Taur_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_LES[celli]=Taur_LES[11][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_Taur_12_0055_AREN.dat",n2,tmp_Taur_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_LES[celli]=Taur_LES[12][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_Taur_13_0055_AREN.dat",n2,tmp_Taur_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_LES[celli]=Taur_LES[13][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_Taur_14_0055_AREN.dat",n2,tmp_Taur_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_LES[celli]=Taur_LES[14][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_Taur_15_0055_AREN.dat",n2,tmp_Taur_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_LES[celli]=Taur_LES[15][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_Taur_16_0055_AREN.dat",n2,tmp_Taur_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_LES[celli]=Taur_LES[16][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_Taur_17_0055_AREN.dat",n2,tmp_Taur_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_LES[celli]=Taur_LES[17][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_Taur_18_0055_AREN.dat",n2,tmp_Taur_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_LES[celli]=Taur_LES[18][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_Taur_19_0055_AREN.dat",n2,tmp_Taur_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_LES[celli]=Taur_LES[19][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_Taur_20_0055_AREN.dat",n2,tmp_Taur_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_LES[celli]=Taur_LES[20][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_Taur_21_0055_AREN.dat",n2,tmp_Taur_i_LES);
+
+scalarField tmp_kappar_i_LES(n2,0.0);
+	for(int celli=n0;celli<n2;celli++) tmp_kappar_i_LES[celli]=kappar_LES[0][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_kappar_1_0055_AREN.dat",n2,tmp_kappar_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_kappar_i_LES[celli]=kappar_LES[1][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_kappar_2_0055_AREN.dat",n2,tmp_kappar_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_kappar_i_LES[celli]=kappar_LES[2][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_kappar_3_0055_AREN.dat",n2,tmp_kappar_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_kappar_i_LES[celli]=kappar_LES[3][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_kappar_4_0055_AREN.dat",n2,tmp_kappar_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_kappar_i_LES[celli]=kappar_LES[4][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_kappar_5_0055_AREN.dat",n2,tmp_kappar_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_kappar_i_LES[celli]=kappar_LES[5][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_kappar_6_0055_AREN.dat",n2,tmp_kappar_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_kappar_i_LES[celli]=kappar_LES[6][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_kappar_7_0055_AREN.dat",n2,tmp_kappar_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_kappar_i_LES[celli]=kappar_LES[7][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_kappar_8_0055_AREN.dat",n2,tmp_kappar_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_kappar_i_LES[celli]=kappar_LES[8][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_kappar_9_0055_AREN.dat",n2,tmp_kappar_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_kappar_i_LES[celli]=kappar_LES[9][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_kappar_10_0055_AREN.dat",n2,tmp_kappar_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_kappar_i_LES[celli]=kappar_LES[10][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_kappar_11_0055_AREN.dat",n2,tmp_kappar_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_kappar_i_LES[celli]=kappar_LES[11][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_kappar_12_0055_AREN.dat",n2,tmp_kappar_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_kappar_i_LES[celli]=kappar_LES[12][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_kappar_13_0055_AREN.dat",n2,tmp_kappar_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_kappar_i_LES[celli]=kappar_LES[13][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_kappar_14_0055_AREN.dat",n2,tmp_kappar_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_kappar_i_LES[celli]=kappar_LES[14][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_kappar_15_0055_AREN.dat",n2,tmp_kappar_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_kappar_i_LES[celli]=kappar_LES[15][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_kappar_16_0055_AREN.dat",n2,tmp_kappar_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_kappar_i_LES[celli]=kappar_LES[16][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_kappar_17_0055_AREN.dat",n2,tmp_kappar_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_kappar_i_LES[celli]=kappar_LES[17][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_kappar_18_0055_AREN.dat",n2,tmp_kappar_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_kappar_i_LES[celli]=kappar_LES[18][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_kappar_19_0055_AREN.dat",n2,tmp_kappar_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_kappar_i_LES[celli]=kappar_LES[19][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_kappar_20_0055_AREN.dat",n2,tmp_kappar_i_LES);
+	for(int celli=n0;celli<n2;celli++) tmp_kappar_i_LES[celli]=kappar_LES[20][celli];
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_kappar_21_0055_AREN.dat",n2,tmp_kappar_i_LES);
+
+	writedoubleBinaryFile("/scratch/Ali/A-Priori-LES-Data/HIGH/jet_0055/filterWidth12/jet_kappa2_LES_0055_PaSR.dat",n2,kappa_LES);
+
+	const double tEnd = OpenSMOKE::OpenSMOKEGetCpuTime();		
+	Info << "CPU time for chemistry (EDC): " << tEnd - tStart << " s " << endl;				

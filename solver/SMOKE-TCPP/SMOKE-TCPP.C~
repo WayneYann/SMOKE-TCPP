@@ -1,0 +1,232 @@
+/*-----------------------------------------------------------------------*\
+|                  _       _____ __  __  ____  _  ________                |
+|                 | |     / ____|  \/  |/ __ \| |/ /  ____|               |
+|          ___  __| | ___| (___ | \  / | |  | | ' /| |__                  |
+|         / _ \/ _` |/ __|\___ \| |\/| | |  | |  < |  __|                 |
+|        |  __/ (_| | (__ ____) | |  | | |__| | . \| |____                |
+|         \___|\__,_|\___|_____/|_|  |_|\____/|_|\_\______|               |
+|                                                                         |
+|                                                                         |
+|   Authors: A. Cuoci, M.R. Malik, Z. Li, A. Parente                      |
+|                                                                         |
+|   Contacts: Alberto Cuoci                                               |
+|   email: alberto.cuoci@polimi.it                                        |
+|   Department of Chemistry, Materials and Chemical Engineering           |
+|   Politecnico di Milano                                                 |
+|   P.zza Leonardo da Vinci 32, 20133 Milano (Italy)                      |
+|                                                                         |
+|   Contacts: Mohammad Rafi Malik, Zhiyi Li, Alessandro Parente           |
+|   Aero-Thermo-Mechanical Department                                     |
+|   Université Libre de Bruxelles                                         |
+|   Avenue F. D. Roosevelt 50, 1050 Bruxelles (Belgium)                   |
+|                                                                         |
+|-------------------------------------------------------------------------|
+|                                                                         |
+|   This file is part of edcSMOKE solver.                                 |
+|                                                                         |
+|	License                                                           |
+|                                                                         |
+|   Copyright(C) 2017-2014 A. Cuoci, A. Parente                           |
+|   edcSMOKE is free software: you can redistribute it and/or modify      |
+|   it under the terms of the GNU General Public License as published by  |
+|   the Free Software Foundation, either version 3 of the License, or     |
+|   (at your option) any later version.                                   |
+|                                                                         |
+|   edcSMOKE is distributed in the hope that it will be useful,           |
+|   but WITHOUT ANY WARRANTY; without even the implied warranty of        |
+|   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the         |
+|   GNU General Public License for more details.                          |
+|                                                                         |
+|   You should have received a copy of the GNU General Public License     |
+|   along with edcSMOKE. If not, see <http://www.gnu.org/licenses/>.      |
+|                                                                         |
+\*-----------------------------------------------------------------------*/
+
+// This is a unsteady simulation
+#define STEADYSTATE 0
+
+// OpenSMOKE++ Definitions
+#include "OpenSMOKEpp"
+
+// CHEMKIN maps
+#include "maps/Maps_CHEMKIN"
+
+// OpenSMOKE++ Dictionaries
+#include "dictionary/OpenSMOKE_Dictionary"
+
+// ODE solvers
+#include "math/native-ode-solvers/MultiValueSolver"
+#include "math/external-ode-solvers/ODE_Parameters.h"
+
+// NLS solvers
+#include "math/native-nls-solvers/NonLinearSystemSolver"
+#include "math/native-nls-solvers/parameters/NonLinearSolver_Parameters.h"
+
+// OpenFOAM
+#include "fvCFD.H"
+#if OPENFOAM_VERSION == 30
+#include "turbulentFluidThermoModel.H"
+#else
+#include "turbulenceModel.H"
+#include "compressible/LES/LESModel/LESModel.H"
+#endif
+#include "psiCombustionModel.H"
+#include "multivariateScheme.H"
+#include "pimpleControl.H"
+#if OPENFOAM_VERSION == 30
+#include "fvIOoptionList.H"//#include "fvOptions.H"
+#include "localEulerDdtScheme.H"
+#include "fvcSmooth.H"
+#else
+#include "fvIOoptionList.H"
+#endif
+#include "radiationModel.H"
+#include "bound.H"
+
+// Utilities
+#include "Utilities.H"
+
+// DRG
+#include "DRG.H"
+
+// ODE systems
+#include "ODE_PSR.H"
+#include "ODE_PSR_Interface.H"
+#include "ODE_PFR.H"
+#include "ODE_PFR_Interface.H"
+
+// NLS Systems
+#include "NLS_PSR.H"
+#include "NLS_PSR_Interface.H"
+
+// Characteristic chemical times
+#include "CharacteristicChemicalTimes.H"
+
+// ISAT
+#if EDCSMOKE_USE_ISAT == 1
+    #include "ISAT.h"
+    #include "numericalJacobian4ISAT.H"
+    #include "mappingGradients/mappingGradient4OpenFOAM.h"
+#endif
+
+
+
+// * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * * //
+/* read binary float file, return as array of float */
+float *readFloatBinaryFile(char *filename, int ndata)
+{
+	FILE *infile=NULL;
+	float *dataread;
+	int idx;
+
+	/*open file */
+	infile = fopen(filename, "r");
+	if(!infile) /*show message and exit if fail opening file */
+	{
+		printf("error opening file %s \n", filename);
+		exit(0);
+	}
+
+	/*allocated memory/array for float data */
+	dataread = (float*) calloc(ndata, sizeof(float));
+
+	/*read file and save as float data */
+	fread(dataread, sizeof(float), ndata, infile);
+
+	/* close file */
+	fclose(infile);
+
+	return(dataread);
+}
+
+void writedoubleBinaryFile(char *filename, int ndata, scalarField data)
+{
+	FILE *outfile=NULL;
+	double *datawrite;
+	int idx;
+
+	/*open file */
+	outfile = fopen(filename, "w");
+
+	/*allocated memory/array for float data */
+	datawrite = (double*) calloc(ndata, sizeof(double));
+
+	for (int i=0; i<ndata; i++) datawrite[i] = data[i];
+	/*read file and save as float data */
+	fwrite(datawrite, sizeof(double), ndata, outfile);
+
+	/* close file */
+	fclose(outfile);
+
+	//return(dataread);
+}
+
+
+
+int main(int argc, char *argv[])
+{	
+		
+	#include "setRootCase.H"
+    #include "createTime.H"
+    #include "createMesh.H"
+    #include "readGravitationalAcceleration.H"
+
+    pimpleControl pimple(mesh);
+
+    #include "createTimeControls.H"//added
+    #include "createRDeltaT.H"//added
+
+    #include "createFields.H"
+    #include "createMRF.H"//added 
+    #include "createOpenSMOKEFields.H"
+    #include "createFvOptions.H"
+    #include "createRadiationModel.H"
+    #include "properties.H"//added 2
+
+    #include "initContinuityErrs.H"
+    #include "readTimeControls.H"
+    //#include "compressibleCourantNo.H" //these two commented and changed to below style
+    //#include "setInitialDeltaT.H"
+    if (!LTS)
+    {
+        #include "compressibleCourantNo.H"
+        #include "setInitialDeltaT.H"
+    }
+    if (reactorType == REACTORTYPE_PFR)
+    {
+		
+		{
+		 //#include "chemistry_LES_PaSR_H.H"
+		
+		 // #include "chemistry_DNS_H.H"// #include "chemistry_DNS_H_DaFFR.H"//
+		   //#include "chemistry_DNS_L.H"//Ali
+		 //#include "chemistry_DNS_M.H"//Ali
+		//#include "chemistry_DNS_H_RR.H"
+		//#include "chemistry_DNS_H_Taur.H"
+		
+	 	 // #include "chemistry_LES_H.H"//Ali
+	 	  //#include "chemistry_LES_H_PFR.H"
+	 	  // #include "chemistry_LES_edc_PFR_H.H"
+	 	  
+	 	  // #include "chemistry_LES_L.H"//Ali
+	 	 // #include "chemistry_LES_L_PFR.H"
+	 	  // #include "chemistry_LES_edc_PFR_L.H"
+	 	  
+	 	  // #include "chemistry_LES_L.H"//Ali
+	 	  //#include "chemistry_LES_M_PFR.H"
+	 	  // #include "chemistry_LES_edc_PFR_L.H"
+		}
+    }
+    else
+    {
+    	{
+    		#include "chemistry_LES_edc_PSR_H.H"//Ali
+    		//#include "chemistry_LES_edc_PSR_L.H"//Ali
+    		
+    		//#include "chemistry_RANS_edc_PSR_H.H"//Ali
+    	}
+    }
+    return 0;
+}
+
+// ************************************************************************* //

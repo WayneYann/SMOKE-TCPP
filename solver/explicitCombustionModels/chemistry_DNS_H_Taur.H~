@@ -1,0 +1,1533 @@
+/*{
+Info<<"part 1 "<<endl;
+//part 
+//const int n = 148635648;//mesh size (L case DNS HAWKES)
+	const int n = 864*1008*576;//mesh size (H case DNS HAWKES)
+	const int n0 =0;
+	const int n1 =0;
+	const int n2 =100e6;
+	//scalar volume_cell = 3.375e-15;//cell volume size (L case DNS HAWKES)
+	scalar volume_cell = ((1.37*0.001)/72)*((1.37*0.001)/72)*((1.37*0.001)/72);//cell volume size (H case DNS HAWKES)
+	scalarField T_DNS_OF(n2,0.0);
+	Info<<"T_DNS made"<<endl;
+	scalarField rho_DNS_OF(n2,0.0);
+	Info<<"rho_DNS made"<<endl;
+	scalarField p_DNS_OF(n2,0.0);
+	Info<<"p_DNS made"<<endl;
+
+	List<List<scalar> > Y_DNS(11, List<scalar>(n2) ); 
+	Info<<"Y_DNS_DNS made"<<endl;
+
+
+	//scalarField T_DNS_Final(n2,0.0);
+	scalarField QdotCells_DNS(n2,0.0);
+	scalarField dQCells_DNS(n2,0.0);
+	
+	
+		
+		
+		List<List<scalar> > Taur_DNS(kineticsMapXML->NumberOfReactions(), List<scalar>(n2));
+		
+	
+	{
+			
+	
+
+		//float* T_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_T_0248_le.dat",n);
+		float* T_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_T_0248_le.dat",n);
+		Info<<T_DNS[10]<<endl;
+
+		for(int celli=n0;celli<n2;celli++) T_DNS_OF[celli]=T_DNS[celli+n1];
+		delete T_DNS;T_DNS=NULL;
+	
+		//float* rho_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_rho_0248_le.dat",n);
+		float* rho_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_rho_0248_le.dat",n);
+		Info<<rho_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) rho_DNS_OF[celli]=rho_DNS[celli+n1];
+		delete rho_DNS;rho_DNS=NULL;
+	
+		//float* p_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_P_0248_le.dat",n);
+		float* p_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_P_0248_le.dat",n);
+		Info<<p_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) p_DNS_OF[celli]=p_DNS[celli+n1];
+		delete p_DNS;p_DNS=NULL;
+	
+		//float* Y_CO2_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_CO2_0248_le.dat",n);
+		float* Y_CO2_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_CO2_0248_le.dat",n);
+		Info<<Y_CO2_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[8][celli]=Y_CO2_DNS[celli+n1];
+		delete Y_CO2_DNS;Y_CO2_DNS=NULL; 
+		
+		//float* Y_CO_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_CO_0248_le.dat",n);
+		float* Y_CO_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_CO_0248_le.dat",n);
+		Info<<Y_CO_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[7][celli]=Y_CO_DNS[celli+n1];
+		delete Y_CO_DNS;Y_CO_DNS=NULL;
+		
+		//float* Y_H_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_H_0248_le.dat",n);
+		float* Y_H_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_H_0248_le.dat",n);
+		Info<<Y_H_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[5][celli]=Y_H_DNS[celli+n1];//forAll(Y_H_DNS_OF,i) Y_H_DNS_OF[i]=Y_H_DNS[i];
+		delete Y_H_DNS;Y_H_DNS=NULL;
+	
+		//float* Y_H2_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_H2_0248_le.dat",n);
+		float* Y_H2_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_H2_0248_le.dat",n);
+		Info<<Y_H2_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[0][celli]=Y_H2_DNS[celli+n1];//forAll(Y_H2_DNS_OF,i) Y_H2_DNS_OF[i]=Y_H2_DNS[i];
+		delete Y_H2_DNS;Y_H2_DNS=NULL;
+	
+		//float* Y_H2O_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_H2O_0248_le.dat",n);
+		float* Y_H2O_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_H2O_0248_le.dat",n);	
+		Info<<Y_H2O_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[4][celli]=Y_H2O_DNS[celli+n1];//forAll(Y_H2O_DNS_OF,i) Y_H2O_DNS_OF[i]=Y_H2O_DNS[i];
+		delete Y_H2O_DNS;Y_H2O_DNS=NULL;
+	
+		//float* Y_HCO_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_HCO_0248_le.dat",n);
+		float* Y_HCO_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_HCO_0248_le.dat",n);
+		Info<<Y_HCO_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[9][celli]=Y_HCO_DNS[celli+n1];//forAll(Y_HCO_DNS_OF,i) Y_HCO_DNS_OF[i]=Y_HCODNS[i];
+		delete Y_HCO_DNS;Y_HCO_DNS=NULL;
+	
+		//float* Y_HO2_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_HO2_0248_le.dat",n);
+		float* Y_HO2_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_HO2_0248_le.dat",n);
+		Info<<Y_HO2_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[6][celli]=Y_HO2_DNS[celli+n1];//forAll(Y_HO2_DNS_OF,i) Y_HO2_DNS_OF[i]=Y_HO2_DNS[i];
+		delete Y_HO2_DNS;Y_HO2_DNS=NULL;
+	
+		//float* Y_O_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_O_0248_le.dat",n);
+		float* Y_O_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_O_0248_le.dat",n);
+		Info<<Y_O_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[2][celli]=Y_O_DNS[celli+n1];//forAll(Y_O_DNS_OF,i) Y_O_DNS_OF[i]=Y_O_DNS[i];
+		delete Y_O_DNS;Y_O_DNS=NULL;
+	
+		//float* Y_O2_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_O2_0248_le.dat",n);
+		float* Y_O2_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_O2_0248_le.dat",n);
+		Info<<Y_O2_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[1][celli]=Y_O2_DNS[celli+n1];//forAll(Y_O2_DNS_OF,i) Y_O2_DNS_OF[i]=Y_O2_DNS[i];
+		delete Y_O2_DNS;Y_O2_DNS=NULL;
+	
+		//float* Y_OH_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_OH_0248_le.dat",n);
+		float* Y_OH_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_OH_0248_le.dat",n);	
+		Info<<Y_OH_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[3][celli]=Y_OH_DNS[celli+n1];//forAll(Y_OH_DNS_OF,i) Y_OH_DNS_OF[i]=Y_OH_DNS[i];
+		delete Y_OH_DNS;Y_OH_DNS=NULL;
+	
+		for(int celli=n0;celli<n2;celli++)
+		{
+			scalar sum=0.0;
+			for(int i=0;i<10;i++)
+			{
+				sum+=Y_DNS[i][celli];
+			}
+			Y_DNS[10][celli]=1.0-sum;
+		}
+
+	}
+	
+	unsigned int counter = 0;
+	const int unsigned ns = thermodynamicsMapXML->NumberOfSpecies();
+	const int unsigned nr = kineticsMapXML->NumberOfReactions();
+		
+	//OpenSMOKE::OpenSMOKEVectorDouble omegaMean(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble omegaStar_(ns);
+	//OpenSMOKE::OpenSMOKEVectorDouble xMean(ns);
+	//OpenSMOKE::OpenSMOKEVectorDouble cMean(ns);
+	//OpenSMOKE::OpenSMOKEVectorDouble h_species(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble xStar_(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble cStar_(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble RStar_(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble rStar_(ns);
+	
+	
+
+		
+	double hMean, MWMean;
+	const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
+	for(int celli=n0;celli<n2;celli++)
+	{
+		const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
+		fine_structure_ode_pfr.Set(p_DNS_OF[celli]);//fine_structure_ode_pfr.Set(pCells[celli]);
+		
+		//const double t0 = 0.;
+		//double tf = 2e-09;//Ali 0.;	
+		for(unsigned int i=0;i<ns;i++)
+				omegaStar_[i+1] = Y_DNS[i][celli];
+				
+		// Convert to mole fractions
+		thermodynamicsMapXML->MoleFractions_From_MassFractions(xStar_.GetHandle(), MWMean, omegaStar_.GetHandle());
+
+		const double TStar_ = T_DNS_OF[celli];
+		double P_Pa_=p_DNS_OF[celli];
+		double MWStar_=MWMean;
+		double cTotStar_ = P_Pa_/(PhysicalConstants::R_J_kmol * TStar_);
+		double rhoStar_ = cTotStar_*MWStar_;
+		Product(cTotStar_, xStar_, &cStar_);
+		thermodynamicsMapXML->SetTemperature(TStar_);
+		thermodynamicsMapXML->SetPressure(P_Pa_);
+		double cpStar_ = thermodynamicsMapXML->cpMolar_Mixture_From_MoleFractions(xStar_.GetHandle());
+		cpStar_/=MWStar_;
+		
+		kineticsMapXML->SetTemperature(TStar_);
+		kineticsMapXML->SetPressure(P_Pa_);
+		kineticsMapXML->ReactionEnthalpiesAndEntropies();
+		kineticsMapXML->KineticConstants();
+		kineticsMapXML->ReactionRates(cStar_.GetHandle());
+		kineticsMapXML->FormationRates(RStar_.GetHandle());
+		const double QRStar_ = kineticsMapXML->HeatRelease(RStar_.GetHandle());
+
+		
+		//Addedd by Ali 1 Aug 2017 to get RR
+
+		
+		Eigen::MatrixXd Jacob(nr, ns);	
+		kineticsMapXML->DerivativesOfReactionRates(cStar_.GetHandle(), &Jacob);
+		Eigen::MatrixXd nu_(nr, ns);						
+		{
+			nu_.setZero();
+
+			// Loop over all the reactions (product side)
+			for (int k = 0; k < kineticsMapXML->stoichiometry().stoichiometric_matrix_products().outerSize(); ++k)
+			{
+				// Loop over all the non-zero stoichiometric coefficients (product side) of reaction k
+				for (Eigen::SparseMatrix<double>::InnerIterator it(kineticsMapXML->stoichiometry().stoichiometric_matrix_products(), k); it; ++it)
+				{
+					nu_(it.row(), it.col()) += it.value();
+				}
+			}
+
+			// Loop over all the reactions (product side)
+			for (int k = 0; k < kineticsMapXML->stoichiometry().stoichiometric_matrix_reactants().outerSize(); ++k)
+			{
+				// Loop over all the non-zero stoichiometric coefficients (product side) of reaction k
+				for (Eigen::SparseMatrix<double>::InnerIterator it(kineticsMapXML->stoichiometry().stoichiometric_matrix_reactants(), k); it; ++it)
+				{
+					nu_(it.row(), it.col()) -= it.value();
+				}
+			}
+		}
+		//dot product
+			
+		for(unsigned int k=0;k<nr;k++)
+		{
+			for(unsigned int j=0;j<ns;j++)
+			{
+				Taur_DNS[k][celli]+=Jacob(k,j)*nu_(k,j);
+			}
+			if(Taur_DNS[k][celli]!=0)
+			{
+				Taur_DNS[k][celli]=fabs(1.0/Taur_DNS[k][celli]);
+			}
+			else
+			{
+				Info<<"Taur for reaction"<<k+1<<" is 0 "<<endl;
+				Taur_DNS[k][celli]=1.0/1e-20;
+				
+			}
+		
+		}
+			
+		// end modification
+			
+			QdotCells_DNS[celli] = QRStar_;
+			dQCells_DNS[celli] = QRStar_ * volume_cell;	
+			if (counter%(int(0.001*n2)+1) == 0)
+			{
+
+					Info << "   Accomplished: " << counter << "/" << n2<< endl;
+
+			}
+			counter++;
+			
+	}
+	counter = 0;
+	//#include "Da.H"
+
+	//Info<<"Y O2 10"<<Y_DNS[1][10]<<endl;
+					
+	//for H case
+	//writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_T_0248_le_out1.dat",n2,T_DNS_Final);
+
+	
+	
+	//Added by ali on 1 Aug 2017 to get RR
+
+scalarField tmp_Taur_i_DNS(n2,0.0);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[0][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_1_0248_AREN_out1.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[1][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_2_0248_AREN_out1.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[2][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_3_0248_AREN_out1.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[3][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_4_0248_AREN_out1.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[4][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_5_0248_AREN_out1.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[5][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_6_0248_AREN_out1.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[6][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_7_0248_AREN_out1.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[7][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_8_0248_AREN_out1.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[8][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_9_0248_AREN_out1.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[9][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_10_0248_AREN_out1.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[10][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_11_0248_AREN_out1.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[11][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_12_0248_AREN_out1.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[12][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_13_0248_AREN_out1.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[13][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_14_0248_AREN_out1.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[14][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_15_0248_AREN_out1.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[15][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_16_0248_AREN_out1.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[16][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_17_0248_AREN_out1.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[17][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_18_0248_AREN_out1.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[18][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_19_0248_AREN_out1.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[19][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_20_0248_AREN_out1.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[20][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_21_0248_AREN_out1.dat",n2,tmp_Taur_i_DNS);
+
+
+	const double tEnd = OpenSMOKE::OpenSMOKEGetCpuTime();		
+	Info << "CPU time for chemistry (EDC): " << tEnd - tStart << " s " << endl;				
+}
+*/
+/*
+{
+Info<<"part 2 "<<endl;
+//part 2
+//const int n = 148635648;//mesh size (L case DNS HAWKES)
+	const int n = 864*1008*576;//mesh size (H case DNS HAWKES)
+	const int n0 =0;
+	const int n1 =100e6;
+	const int n2 =100e6;
+	//scalar volume_cell = 3.375e-15;//cell volume size (L case DNS HAWKES)
+	scalar volume_cell = ((1.37*0.001)/72)*((1.37*0.001)/72)*((1.37*0.001)/72);//cell volume size (H case DNS HAWKES)
+	scalarField T_DNS_OF(n2,0.0);
+	Info<<"T_DNS made"<<endl;
+	scalarField rho_DNS_OF(n2,0.0);
+	Info<<"rho_DNS made"<<endl;
+	scalarField p_DNS_OF(n2,0.0);
+	Info<<"p_DNS made"<<endl;
+
+	List<List<scalar> > Y_DNS(11, List<scalar>(n2) ); 
+	Info<<"Y_DNS_DNS made"<<endl;
+
+
+	//scalarField T_DNS_Final(n2,0.0);
+	scalarField QdotCells_DNS(n2,0.0);
+	scalarField dQCells_DNS(n2,0.0);
+	
+	
+		
+		List<List<scalar> > Taur_DNS(kineticsMapXML->NumberOfReactions(), List<scalar>(n2));
+		
+	
+	{
+			
+	
+
+		//float* T_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_T_0248_le.dat",n);
+		float* T_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_T_0248_le.dat",n);
+		Info<<T_DNS[10]<<endl;
+
+		for(int celli=n0;celli<n2;celli++) T_DNS_OF[celli]=T_DNS[celli+n1];
+		delete T_DNS;T_DNS=NULL;
+	
+		//float* rho_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_rho_0248_le.dat",n);
+		float* rho_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_rho_0248_le.dat",n);
+		Info<<rho_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) rho_DNS_OF[celli]=rho_DNS[celli+n1];
+		delete rho_DNS;rho_DNS=NULL;
+	
+		//float* p_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_P_0248_le.dat",n);
+		float* p_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_P_0248_le.dat",n);
+		Info<<p_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) p_DNS_OF[celli]=p_DNS[celli+n1];
+		delete p_DNS;p_DNS=NULL;
+	
+		//float* Y_CO2_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_CO2_0248_le.dat",n);
+		float* Y_CO2_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_CO2_0248_le.dat",n);
+		Info<<Y_CO2_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[8][celli]=Y_CO2_DNS[celli+n1];
+		delete Y_CO2_DNS;Y_CO2_DNS=NULL; 
+		
+		//float* Y_CO_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_CO_0248_le.dat",n);
+		float* Y_CO_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_CO_0248_le.dat",n);
+		Info<<Y_CO_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[7][celli]=Y_CO_DNS[celli+n1];
+		delete Y_CO_DNS;Y_CO_DNS=NULL;
+		
+		//float* Y_H_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_H_0248_le.dat",n);
+		float* Y_H_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_H_0248_le.dat",n);
+		Info<<Y_H_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[5][celli]=Y_H_DNS[celli+n1];//forAll(Y_H_DNS_OF,i) Y_H_DNS_OF[i]=Y_H_DNS[i];
+		delete Y_H_DNS;Y_H_DNS=NULL;
+	
+		//float* Y_H2_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_H2_0248_le.dat",n);
+		float* Y_H2_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_H2_0248_le.dat",n);
+		Info<<Y_H2_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[0][celli]=Y_H2_DNS[celli+n1];//forAll(Y_H2_DNS_OF,i) Y_H2_DNS_OF[i]=Y_H2_DNS[i];
+		delete Y_H2_DNS;Y_H2_DNS=NULL;
+	
+		//float* Y_H2O_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_H2O_0248_le.dat",n);
+		float* Y_H2O_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_H2O_0248_le.dat",n);	
+		Info<<Y_H2O_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[4][celli]=Y_H2O_DNS[celli+n1];//forAll(Y_H2O_DNS_OF,i) Y_H2O_DNS_OF[i]=Y_H2O_DNS[i];
+		delete Y_H2O_DNS;Y_H2O_DNS=NULL;
+	
+		//float* Y_HCO_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_HCO_0248_le.dat",n);
+		float* Y_HCO_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_HCO_0248_le.dat",n);
+		Info<<Y_HCO_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[9][celli]=Y_HCO_DNS[celli+n1];//forAll(Y_HCO_DNS_OF,i) Y_HCO_DNS_OF[i]=Y_HCODNS[i];
+		delete Y_HCO_DNS;Y_HCO_DNS=NULL;
+	
+		//float* Y_HO2_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_HO2_0248_le.dat",n);
+		float* Y_HO2_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_HO2_0248_le.dat",n);
+		Info<<Y_HO2_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[6][celli]=Y_HO2_DNS[celli+n1];//forAll(Y_HO2_DNS_OF,i) Y_HO2_DNS_OF[i]=Y_HO2_DNS[i];
+		delete Y_HO2_DNS;Y_HO2_DNS=NULL;
+	
+		//float* Y_O_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_O_0248_le.dat",n);
+		float* Y_O_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_O_0248_le.dat",n);
+		Info<<Y_O_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[2][celli]=Y_O_DNS[celli+n1];//forAll(Y_O_DNS_OF,i) Y_O_DNS_OF[i]=Y_O_DNS[i];
+		delete Y_O_DNS;Y_O_DNS=NULL;
+	
+		//float* Y_O2_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_O2_0248_le.dat",n);
+		float* Y_O2_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_O2_0248_le.dat",n);
+		Info<<Y_O2_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[1][celli]=Y_O2_DNS[celli+n1];//forAll(Y_O2_DNS_OF,i) Y_O2_DNS_OF[i]=Y_O2_DNS[i];
+		delete Y_O2_DNS;Y_O2_DNS=NULL;
+	
+		//float* Y_OH_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_OH_0248_le.dat",n);
+		float* Y_OH_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_OH_0248_le.dat",n);	
+		Info<<Y_OH_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[3][celli]=Y_OH_DNS[celli+n1];//forAll(Y_OH_DNS_OF,i) Y_OH_DNS_OF[i]=Y_OH_DNS[i];
+		delete Y_OH_DNS;Y_OH_DNS=NULL;
+	
+		for(int celli=n0;celli<n2;celli++)
+		{
+			scalar sum=0.0;
+			for(int i=0;i<10;i++)
+			{
+				sum+=Y_DNS[i][celli];
+			}
+			Y_DNS[10][celli]=1.0-sum;
+		}
+
+	}
+	
+	unsigned int counter = 0;
+	const int unsigned ns = thermodynamicsMapXML->NumberOfSpecies();
+	const int unsigned nr = kineticsMapXML->NumberOfReactions();
+		
+	//OpenSMOKE::OpenSMOKEVectorDouble omegaMean(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble omegaStar_(ns);
+	//OpenSMOKE::OpenSMOKEVectorDouble xMean(ns);
+	//OpenSMOKE::OpenSMOKEVectorDouble cMean(ns);
+	//OpenSMOKE::OpenSMOKEVectorDouble h_species(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble xStar_(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble cStar_(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble RStar_(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble rStar_(ns);
+	
+	
+
+		
+	double hMean, MWMean;
+	const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
+	for(int celli=n0;celli<n2;celli++)
+	{
+		const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
+		fine_structure_ode_pfr.Set(p_DNS_OF[celli]);//fine_structure_ode_pfr.Set(pCells[celli]);
+		
+		//const double t0 = 0.;
+		//double tf = 2e-09;//Ali 0.;	
+		for(unsigned int i=0;i<ns;i++)
+				omegaStar_[i+1] = Y_DNS[i][celli];
+				
+		// Convert to mole fractions
+		thermodynamicsMapXML->MoleFractions_From_MassFractions(xStar_.GetHandle(), MWMean, omegaStar_.GetHandle());
+
+		const double TStar_ = T_DNS_OF[celli];
+		double P_Pa_=p_DNS_OF[celli];
+		double MWStar_=MWMean;
+		double cTotStar_ = P_Pa_/(PhysicalConstants::R_J_kmol * TStar_);
+		double rhoStar_ = cTotStar_*MWStar_;
+		Product(cTotStar_, xStar_, &cStar_);
+		thermodynamicsMapXML->SetTemperature(TStar_);
+		thermodynamicsMapXML->SetPressure(P_Pa_);
+		double cpStar_ = thermodynamicsMapXML->cpMolar_Mixture_From_MoleFractions(xStar_.GetHandle());
+		cpStar_/=MWStar_;
+		
+		kineticsMapXML->SetTemperature(TStar_);
+		kineticsMapXML->SetPressure(P_Pa_);
+		kineticsMapXML->ReactionEnthalpiesAndEntropies();
+		kineticsMapXML->KineticConstants();
+		kineticsMapXML->ReactionRates(cStar_.GetHandle());
+		kineticsMapXML->FormationRates(RStar_.GetHandle());
+		const double QRStar_ = kineticsMapXML->HeatRelease(RStar_.GetHandle());
+
+		
+		//Addedd by Ali 1 Aug 2017 to get RR
+
+		
+		Eigen::MatrixXd Jacob(nr, ns);	
+		kineticsMapXML->DerivativesOfReactionRates(cStar_.GetHandle(), &Jacob);
+		Eigen::MatrixXd nu_(nr, ns);						
+		{
+			nu_.setZero();
+
+			// Loop over all the reactions (product side)
+			for (int k = 0; k < kineticsMapXML->stoichiometry().stoichiometric_matrix_products().outerSize(); ++k)
+			{
+				// Loop over all the non-zero stoichiometric coefficients (product side) of reaction k
+				for (Eigen::SparseMatrix<double>::InnerIterator it(kineticsMapXML->stoichiometry().stoichiometric_matrix_products(), k); it; ++it)
+				{
+					nu_(it.row(), it.col()) += it.value();
+				}
+			}
+
+			// Loop over all the reactions (product side)
+			for (int k = 0; k < kineticsMapXML->stoichiometry().stoichiometric_matrix_reactants().outerSize(); ++k)
+			{
+				// Loop over all the non-zero stoichiometric coefficients (product side) of reaction k
+				for (Eigen::SparseMatrix<double>::InnerIterator it(kineticsMapXML->stoichiometry().stoichiometric_matrix_reactants(), k); it; ++it)
+				{
+					nu_(it.row(), it.col()) -= it.value();
+				}
+			}
+		}
+		//dot product
+			
+		for(unsigned int k=0;k<nr;k++)
+		{
+			for(unsigned int j=0;j<ns;j++)
+			{
+				Taur_DNS[k][celli]+=Jacob(k,j)*nu_(k,j);
+			}
+			if(Taur_DNS[k][celli]!=0)
+			{
+				Taur_DNS[k][celli]=fabs(1.0/Taur_DNS[k][celli]);
+			}
+			else
+			{
+				Info<<"Taur for reaction"<<k+1<<" is 0 "<<endl;
+				Taur_DNS[k][celli]=1.0/1e-20;
+				
+			}
+		
+		}
+			
+		// end modification
+			
+			QdotCells_DNS[celli] = QRStar_;
+			dQCells_DNS[celli] = QRStar_ * volume_cell;	
+			if (counter%(int(0.001*n2)+1) == 0)
+			{
+
+					Info << "   Accomplished: " << counter << "/" << n2<< endl;
+
+			}
+			counter++;
+			
+	}
+	counter = 0;
+	//#include "Da.H"
+
+	//Info<<"Y O2 10"<<Y_DNS[1][10]<<endl;
+					
+	//for H case
+	//writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_T_0248_le_out1.dat",n2,T_DNS_Final);
+
+	
+	
+	//Added by ali on 1 Aug 2017 to get RR
+
+
+scalarField tmp_Taur_i_DNS(n2,0.0);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[0][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_1_0248_AREN_out2.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[1][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_2_0248_AREN_out2.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[2][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_3_0248_AREN_out2.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[3][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_4_0248_AREN_out2.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[4][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_5_0248_AREN_out2.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[5][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_6_0248_AREN_out2.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[6][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_7_0248_AREN_out2.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[7][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_8_0248_AREN_out2.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[8][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_9_0248_AREN_out2.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[9][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_10_0248_AREN_out2.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[10][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_11_0248_AREN_out2.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[11][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_12_0248_AREN_out2.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[12][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_13_0248_AREN_out2.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[13][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_14_0248_AREN_out2.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[14][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_15_0248_AREN_out2.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[15][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_16_0248_AREN_out2.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[16][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_17_0248_AREN_out2.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[17][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_18_0248_AREN_out2.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[18][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_19_0248_AREN_out2.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[19][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_20_0248_AREN_out2.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[20][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_21_0248_AREN_out2.dat",n2,tmp_Taur_i_DNS);
+
+
+	const double tEnd = OpenSMOKE::OpenSMOKEGetCpuTime();		
+	Info << "CPU time for chemistry (EDC): " << tEnd - tStart << " s " << endl;				
+}
+*/
+
+{
+Info<<"part 3 "<<endl;
+//part 3
+//const int n = 148635648;//mesh size (L case DNS HAWKES)
+	const int n = 864*1008*576;//mesh size (H case DNS HAWKES)
+	const int n0 =0;
+	const int n1 =200e6;
+	const int n2 =100e6;
+	//scalar volume_cell = 3.375e-15;//cell volume size (L case DNS HAWKES)
+	scalar volume_cell = ((1.37*0.001)/72)*((1.37*0.001)/72)*((1.37*0.001)/72);//cell volume size (H case DNS HAWKES)
+	scalarField T_DNS_OF(n2,0.0);
+	Info<<"T_DNS made"<<endl;
+	scalarField rho_DNS_OF(n2,0.0);
+	Info<<"rho_DNS made"<<endl;
+	scalarField p_DNS_OF(n2,0.0);
+	Info<<"p_DNS made"<<endl;
+
+	List<List<scalar> > Y_DNS(11, List<scalar>(n2) ); 
+	Info<<"Y_DNS_DNS made"<<endl;
+
+
+	//scalarField T_DNS_Final(n2,0.0);
+	scalarField QdotCells_DNS(n2,0.0);
+	scalarField dQCells_DNS(n2,0.0);
+	
+	
+		
+		List<List<scalar> > Taur_DNS(kineticsMapXML->NumberOfReactions(), List<scalar>(n2));
+		
+	
+	{
+			
+	
+
+		//float* T_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_T_0248_le.dat",n);
+		float* T_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_T_0248_le.dat",n);
+		Info<<T_DNS[10]<<endl;
+
+		for(int celli=n0;celli<n2;celli++) T_DNS_OF[celli]=T_DNS[celli+n1];
+		delete T_DNS;T_DNS=NULL;
+	
+		//float* rho_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_rho_0248_le.dat",n);
+		float* rho_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_rho_0248_le.dat",n);
+		Info<<rho_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) rho_DNS_OF[celli]=rho_DNS[celli+n1];
+		delete rho_DNS;rho_DNS=NULL;
+	
+		//float* p_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_P_0248_le.dat",n);
+		float* p_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_P_0248_le.dat",n);
+		Info<<p_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) p_DNS_OF[celli]=p_DNS[celli+n1];
+		delete p_DNS;p_DNS=NULL;
+	
+		//float* Y_CO2_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_CO2_0248_le.dat",n);
+		float* Y_CO2_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_CO2_0248_le.dat",n);
+		Info<<Y_CO2_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[8][celli]=Y_CO2_DNS[celli+n1];
+		delete Y_CO2_DNS;Y_CO2_DNS=NULL; 
+		
+		//float* Y_CO_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_CO_0248_le.dat",n);
+		float* Y_CO_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_CO_0248_le.dat",n);
+		Info<<Y_CO_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[7][celli]=Y_CO_DNS[celli+n1];
+		delete Y_CO_DNS;Y_CO_DNS=NULL;
+		
+		//float* Y_H_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_H_0248_le.dat",n);
+		float* Y_H_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_H_0248_le.dat",n);
+		Info<<Y_H_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[5][celli]=Y_H_DNS[celli+n1];//forAll(Y_H_DNS_OF,i) Y_H_DNS_OF[i]=Y_H_DNS[i];
+		delete Y_H_DNS;Y_H_DNS=NULL;
+	
+		//float* Y_H2_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_H2_0248_le.dat",n);
+		float* Y_H2_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_H2_0248_le.dat",n);
+		Info<<Y_H2_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[0][celli]=Y_H2_DNS[celli+n1];//forAll(Y_H2_DNS_OF,i) Y_H2_DNS_OF[i]=Y_H2_DNS[i];
+		delete Y_H2_DNS;Y_H2_DNS=NULL;
+	
+		//float* Y_H2O_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_H2O_0248_le.dat",n);
+		float* Y_H2O_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_H2O_0248_le.dat",n);	
+		Info<<Y_H2O_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[4][celli]=Y_H2O_DNS[celli+n1];//forAll(Y_H2O_DNS_OF,i) Y_H2O_DNS_OF[i]=Y_H2O_DNS[i];
+		delete Y_H2O_DNS;Y_H2O_DNS=NULL;
+	
+		//float* Y_HCO_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_HCO_0248_le.dat",n);
+		float* Y_HCO_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_HCO_0248_le.dat",n);
+		Info<<Y_HCO_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[9][celli]=Y_HCO_DNS[celli+n1];//forAll(Y_HCO_DNS_OF,i) Y_HCO_DNS_OF[i]=Y_HCODNS[i];
+		delete Y_HCO_DNS;Y_HCO_DNS=NULL;
+	
+		//float* Y_HO2_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_HO2_0248_le.dat",n);
+		float* Y_HO2_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_HO2_0248_le.dat",n);
+		Info<<Y_HO2_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[6][celli]=Y_HO2_DNS[celli+n1];//forAll(Y_HO2_DNS_OF,i) Y_HO2_DNS_OF[i]=Y_HO2_DNS[i];
+		delete Y_HO2_DNS;Y_HO2_DNS=NULL;
+	
+		//float* Y_O_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_O_0248_le.dat",n);
+		float* Y_O_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_O_0248_le.dat",n);
+		Info<<Y_O_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[2][celli]=Y_O_DNS[celli+n1];//forAll(Y_O_DNS_OF,i) Y_O_DNS_OF[i]=Y_O_DNS[i];
+		delete Y_O_DNS;Y_O_DNS=NULL;
+	
+		//float* Y_O2_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_O2_0248_le.dat",n);
+		float* Y_O2_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_O2_0248_le.dat",n);
+		Info<<Y_O2_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[1][celli]=Y_O2_DNS[celli+n1];//forAll(Y_O2_DNS_OF,i) Y_O2_DNS_OF[i]=Y_O2_DNS[i];
+		delete Y_O2_DNS;Y_O2_DNS=NULL;
+	
+		//float* Y_OH_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_OH_0248_le.dat",n);
+		float* Y_OH_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_OH_0248_le.dat",n);	
+		Info<<Y_OH_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[3][celli]=Y_OH_DNS[celli+n1];//forAll(Y_OH_DNS_OF,i) Y_OH_DNS_OF[i]=Y_OH_DNS[i];
+		delete Y_OH_DNS;Y_OH_DNS=NULL;
+	
+		for(int celli=n0;celli<n2;celli++)
+		{
+			scalar sum=0.0;
+			for(int i=0;i<10;i++)
+			{
+				sum+=Y_DNS[i][celli];
+			}
+			Y_DNS[10][celli]=1.0-sum;
+		}
+
+	}
+	
+	unsigned int counter = 0;
+	const int unsigned ns = thermodynamicsMapXML->NumberOfSpecies();
+	const int unsigned nr = kineticsMapXML->NumberOfReactions();
+		
+	//OpenSMOKE::OpenSMOKEVectorDouble omegaMean(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble omegaStar_(ns);
+	//OpenSMOKE::OpenSMOKEVectorDouble xMean(ns);
+	//OpenSMOKE::OpenSMOKEVectorDouble cMean(ns);
+	//OpenSMOKE::OpenSMOKEVectorDouble h_species(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble xStar_(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble cStar_(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble RStar_(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble rStar_(ns);
+	
+	
+
+		
+	double hMean, MWMean;
+	const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
+	for(int celli=n0;celli<n2;celli++)
+	{
+		const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
+		fine_structure_ode_pfr.Set(p_DNS_OF[celli]);//fine_structure_ode_pfr.Set(pCells[celli]);
+		
+		//const double t0 = 0.;
+		//double tf = 2e-09;//Ali 0.;	
+		for(unsigned int i=0;i<ns;i++)
+				omegaStar_[i+1] = Y_DNS[i][celli];
+				
+		// Convert to mole fractions
+		thermodynamicsMapXML->MoleFractions_From_MassFractions(xStar_.GetHandle(), MWMean, omegaStar_.GetHandle());
+
+		const double TStar_ = T_DNS_OF[celli];
+		double P_Pa_=p_DNS_OF[celli];
+		double MWStar_=MWMean;
+		double cTotStar_ = P_Pa_/(PhysicalConstants::R_J_kmol * TStar_);
+		double rhoStar_ = cTotStar_*MWStar_;
+		Product(cTotStar_, xStar_, &cStar_);
+		thermodynamicsMapXML->SetTemperature(TStar_);
+		thermodynamicsMapXML->SetPressure(P_Pa_);
+		double cpStar_ = thermodynamicsMapXML->cpMolar_Mixture_From_MoleFractions(xStar_.GetHandle());
+		cpStar_/=MWStar_;
+		
+		kineticsMapXML->SetTemperature(TStar_);
+		kineticsMapXML->SetPressure(P_Pa_);
+		kineticsMapXML->ReactionEnthalpiesAndEntropies();
+		kineticsMapXML->KineticConstants();
+		kineticsMapXML->ReactionRates(cStar_.GetHandle());
+		kineticsMapXML->FormationRates(RStar_.GetHandle());
+		const double QRStar_ = kineticsMapXML->HeatRelease(RStar_.GetHandle());
+
+		
+		//Addedd by Ali 1 Aug 2017 to get RR
+
+		
+		Eigen::MatrixXd Jacob(nr, ns);	
+		kineticsMapXML->DerivativesOfReactionRates(cStar_.GetHandle(), &Jacob);
+		Eigen::MatrixXd nu_(nr, ns);						
+		{
+			nu_.setZero();
+
+			// Loop over all the reactions (product side)
+			for (int k = 0; k < kineticsMapXML->stoichiometry().stoichiometric_matrix_products().outerSize(); ++k)
+			{
+				// Loop over all the non-zero stoichiometric coefficients (product side) of reaction k
+				for (Eigen::SparseMatrix<double>::InnerIterator it(kineticsMapXML->stoichiometry().stoichiometric_matrix_products(), k); it; ++it)
+				{
+					nu_(it.row(), it.col()) += it.value();
+				}
+			}
+
+			// Loop over all the reactions (product side)
+			for (int k = 0; k < kineticsMapXML->stoichiometry().stoichiometric_matrix_reactants().outerSize(); ++k)
+			{
+				// Loop over all the non-zero stoichiometric coefficients (product side) of reaction k
+				for (Eigen::SparseMatrix<double>::InnerIterator it(kineticsMapXML->stoichiometry().stoichiometric_matrix_reactants(), k); it; ++it)
+				{
+					nu_(it.row(), it.col()) -= it.value();
+				}
+			}
+		}
+		//to test nu
+		Info<<nu_(0,0)<<endl;
+		Info<<nu_(0,1)<<endl;
+		Info<<nu_(0,2)<<endl;
+		Info<<nu_(0,3)<<endl;
+		Info<<nu_(0,4)<<endl;
+		Info<<nu_(0,5)<<endl;
+		Info<<nu_(0,6)<<endl;
+		Info<<nu_(0,7)<<endl;
+		Info<<nu_(0,8)<<endl;
+		Info<<nu_(0,9)<<endl;
+		Info<<nu_(0,10)<<endl;
+
+		//dot product
+		
+			
+		for(unsigned int k=0;k<nr;k++)
+		{
+			for(unsigned int j=0;j<ns;j++)
+			{
+				Taur_DNS[k][celli]+=Jacob(k,j)*nu_(k,j);
+			}
+			if(Taur_DNS[k][celli]!=0)
+			{
+				Taur_DNS[k][celli]=fabs(1.0/Taur_DNS[k][celli]);
+			}
+			else
+			{
+				Info<<"Taur for reaction"<<k+1<<" is 0 "<<endl;
+				Taur_DNS[k][celli]=1.0/1e-20;
+				
+			}
+		
+		}
+			
+		// end modification
+			
+			QdotCells_DNS[celli] = QRStar_;
+			dQCells_DNS[celli] = QRStar_ * volume_cell;	
+			if (counter%(int(0.001*n2)+1) == 0)
+			{
+
+					Info << "   Accomplished: " << counter << "/" << n2<< endl;
+					Info<<"Tau "<<Taur_DNS[14][counter]<<endl;
+
+			}
+			counter++;
+			
+	}
+	counter = 0;
+	//#include "Da.H"
+
+	//Info<<"Y O2 10"<<Y_DNS[1][10]<<endl;
+					
+	//for H case
+	//writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_T_0248_le_out1.dat",n2,T_DNS_Final);
+
+	
+	
+	//Added by ali on 1 Aug 2017 to get RR
+
+scalarField tmp_Taur_i_DNS(n2,0.0);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[0][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_1_0248_AREN_out3.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[1][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_2_0248_AREN_out3.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[2][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_3_0248_AREN_out3.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[3][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_4_0248_AREN_out3.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[4][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_5_0248_AREN_out3.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[5][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_6_0248_AREN_out3.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[6][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_7_0248_AREN_out3.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[7][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_8_0248_AREN_out3.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[8][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_9_0248_AREN_out3.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[9][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_10_0248_AREN_out3.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[10][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_11_0248_AREN_out3.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[11][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_12_0248_AREN_out3.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[12][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_13_0248_AREN_out3.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[13][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_14_0248_AREN_out3.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[14][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_15_0248_AREN_out3.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[15][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_16_0248_AREN_out3.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[16][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_17_0248_AREN_out3.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[17][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_18_0248_AREN_out3.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[18][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_19_0248_AREN_out3.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[19][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_20_0248_AREN_out3.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[20][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_21_0248_AREN_out3.dat",n2,tmp_Taur_i_DNS);
+
+
+	const double tEnd = OpenSMOKE::OpenSMOKEGetCpuTime();		
+	Info << "CPU time for chemistry (EDC): " << tEnd - tStart << " s " << endl;				
+}
+
+/*
+{
+Info<<"part 4 "<<endl;
+//part 4
+//const int n = 148635648;//mesh size (L case DNS HAWKES)
+	const int n = 864*1008*576;//mesh size (H case DNS HAWKES)
+	const int n0 =0;
+	const int n1 =300e6;
+	const int n2 =100e6;
+	//scalar volume_cell = 3.375e-15;//cell volume size (L case DNS HAWKES)
+	scalar volume_cell = ((1.37*0.001)/72)*((1.37*0.001)/72)*((1.37*0.001)/72);//cell volume size (H case DNS HAWKES)
+	scalarField T_DNS_OF(n2,0.0);
+	Info<<"T_DNS made"<<endl;
+	scalarField rho_DNS_OF(n2,0.0);
+	Info<<"rho_DNS made"<<endl;
+	scalarField p_DNS_OF(n2,0.0);
+	Info<<"p_DNS made"<<endl;
+
+	List<List<scalar> > Y_DNS(11, List<scalar>(n2) ); 
+	Info<<"Y_DNS_DNS made"<<endl;
+
+
+	//scalarField T_DNS_Final(n2,0.0);
+	scalarField QdotCells_DNS(n2,0.0);
+	scalarField dQCells_DNS(n2,0.0);
+	
+	
+		
+	
+	List<List<scalar> > Taur_DNS(kineticsMapXML->NumberOfReactions(), List<scalar>(n2));
+		
+	
+		
+	
+	{
+			
+	
+
+		//float* T_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_T_0248_le.dat",n);
+		float* T_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_T_0248_le.dat",n);
+		Info<<T_DNS[10]<<endl;
+
+		for(int celli=n0;celli<n2;celli++) T_DNS_OF[celli]=T_DNS[celli+n1];
+		delete T_DNS;T_DNS=NULL;
+	
+		//float* rho_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_rho_0248_le.dat",n);
+		float* rho_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_rho_0248_le.dat",n);
+		Info<<rho_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) rho_DNS_OF[celli]=rho_DNS[celli+n1];
+		delete rho_DNS;rho_DNS=NULL;
+	
+		//float* p_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_P_0248_le.dat",n);
+		float* p_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_P_0248_le.dat",n);
+		Info<<p_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) p_DNS_OF[celli]=p_DNS[celli+n1];
+		delete p_DNS;p_DNS=NULL;
+	
+		//float* Y_CO2_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_CO2_0248_le.dat",n);
+		float* Y_CO2_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_CO2_0248_le.dat",n);
+		Info<<Y_CO2_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[8][celli]=Y_CO2_DNS[celli+n1];
+		delete Y_CO2_DNS;Y_CO2_DNS=NULL; 
+		
+		//float* Y_CO_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_CO_0248_le.dat",n);
+		float* Y_CO_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_CO_0248_le.dat",n);
+		Info<<Y_CO_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[7][celli]=Y_CO_DNS[celli+n1];
+		delete Y_CO_DNS;Y_CO_DNS=NULL;
+		
+		//float* Y_H_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_H_0248_le.dat",n);
+		float* Y_H_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_H_0248_le.dat",n);
+		Info<<Y_H_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[5][celli]=Y_H_DNS[celli+n1];//forAll(Y_H_DNS_OF,i) Y_H_DNS_OF[i]=Y_H_DNS[i];
+		delete Y_H_DNS;Y_H_DNS=NULL;
+	
+		//float* Y_H2_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_H2_0248_le.dat",n);
+		float* Y_H2_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_H2_0248_le.dat",n);
+		Info<<Y_H2_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[0][celli]=Y_H2_DNS[celli+n1];//forAll(Y_H2_DNS_OF,i) Y_H2_DNS_OF[i]=Y_H2_DNS[i];
+		delete Y_H2_DNS;Y_H2_DNS=NULL;
+	
+		//float* Y_H2O_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_H2O_0248_le.dat",n);
+		float* Y_H2O_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_H2O_0248_le.dat",n);	
+		Info<<Y_H2O_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[4][celli]=Y_H2O_DNS[celli+n1];//forAll(Y_H2O_DNS_OF,i) Y_H2O_DNS_OF[i]=Y_H2O_DNS[i];
+		delete Y_H2O_DNS;Y_H2O_DNS=NULL;
+	
+		//float* Y_HCO_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_HCO_0248_le.dat",n);
+		float* Y_HCO_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_HCO_0248_le.dat",n);
+		Info<<Y_HCO_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[9][celli]=Y_HCO_DNS[celli+n1];//forAll(Y_HCO_DNS_OF,i) Y_HCO_DNS_OF[i]=Y_HCODNS[i];
+		delete Y_HCO_DNS;Y_HCO_DNS=NULL;
+	
+		//float* Y_HO2_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_HO2_0248_le.dat",n);
+		float* Y_HO2_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_HO2_0248_le.dat",n);
+		Info<<Y_HO2_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[6][celli]=Y_HO2_DNS[celli+n1];//forAll(Y_HO2_DNS_OF,i) Y_HO2_DNS_OF[i]=Y_HO2_DNS[i];
+		delete Y_HO2_DNS;Y_HO2_DNS=NULL;
+	
+		//float* Y_O_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_O_0248_le.dat",n);
+		float* Y_O_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_O_0248_le.dat",n);
+		Info<<Y_O_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[2][celli]=Y_O_DNS[celli+n1];//forAll(Y_O_DNS_OF,i) Y_O_DNS_OF[i]=Y_O_DNS[i];
+		delete Y_O_DNS;Y_O_DNS=NULL;
+	
+		//float* Y_O2_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_O2_0248_le.dat",n);
+		float* Y_O2_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_O2_0248_le.dat",n);
+		Info<<Y_O2_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[1][celli]=Y_O2_DNS[celli+n1];//forAll(Y_O2_DNS_OF,i) Y_O2_DNS_OF[i]=Y_O2_DNS[i];
+		delete Y_O2_DNS;Y_O2_DNS=NULL;
+	
+		//float* Y_OH_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_OH_0248_le.dat",n);
+		float* Y_OH_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_OH_0248_le.dat",n);	
+		Info<<Y_OH_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[3][celli]=Y_OH_DNS[celli+n1];//forAll(Y_OH_DNS_OF,i) Y_OH_DNS_OF[i]=Y_OH_DNS[i];
+		delete Y_OH_DNS;Y_OH_DNS=NULL;
+	
+		for(int celli=n0;celli<n2;celli++)
+		{
+			scalar sum=0.0;
+			for(int i=0;i<10;i++)
+			{
+				sum+=Y_DNS[i][celli];
+			}
+			Y_DNS[10][celli]=1.0-sum;
+		}
+
+	}
+	
+	unsigned int counter = 0;
+	const int unsigned ns = thermodynamicsMapXML->NumberOfSpecies();
+	const int unsigned nr = kineticsMapXML->NumberOfReactions();
+		
+	//OpenSMOKE::OpenSMOKEVectorDouble omegaMean(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble omegaStar_(ns);
+	//OpenSMOKE::OpenSMOKEVectorDouble xMean(ns);
+	//OpenSMOKE::OpenSMOKEVectorDouble cMean(ns);
+	//OpenSMOKE::OpenSMOKEVectorDouble h_species(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble xStar_(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble cStar_(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble RStar_(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble rStar_(ns);
+	
+	
+
+		
+	double hMean, MWMean;
+	const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
+	for(int celli=n0;celli<n2;celli++)
+	{
+		const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
+		fine_structure_ode_pfr.Set(p_DNS_OF[celli]);//fine_structure_ode_pfr.Set(pCells[celli]);
+		
+		//const double t0 = 0.;
+		//double tf = 2e-09;//Ali 0.;	
+		for(unsigned int i=0;i<ns;i++)
+				omegaStar_[i+1] = Y_DNS[i][celli];
+				
+		// Convert to mole fractions
+		thermodynamicsMapXML->MoleFractions_From_MassFractions(xStar_.GetHandle(), MWMean, omegaStar_.GetHandle());
+
+		const double TStar_ = T_DNS_OF[celli];
+		double P_Pa_=p_DNS_OF[celli];
+		double MWStar_=MWMean;
+		double cTotStar_ = P_Pa_/(PhysicalConstants::R_J_kmol * TStar_);
+		double rhoStar_ = cTotStar_*MWStar_;
+		Product(cTotStar_, xStar_, &cStar_);
+		thermodynamicsMapXML->SetTemperature(TStar_);
+		thermodynamicsMapXML->SetPressure(P_Pa_);
+		double cpStar_ = thermodynamicsMapXML->cpMolar_Mixture_From_MoleFractions(xStar_.GetHandle());
+		cpStar_/=MWStar_;
+		
+		kineticsMapXML->SetTemperature(TStar_);
+		kineticsMapXML->SetPressure(P_Pa_);
+		kineticsMapXML->ReactionEnthalpiesAndEntropies();
+		kineticsMapXML->KineticConstants();
+		kineticsMapXML->ReactionRates(cStar_.GetHandle());
+		kineticsMapXML->FormationRates(RStar_.GetHandle());
+		const double QRStar_ = kineticsMapXML->HeatRelease(RStar_.GetHandle());
+
+		
+		//Addedd by Ali 1 Aug 2017 to get RR
+
+
+		Eigen::MatrixXd Jacob(nr, ns);	
+		kineticsMapXML->DerivativesOfReactionRates(cStar_.GetHandle(), &Jacob);
+		Eigen::MatrixXd nu_(nr, ns);						
+		{
+			nu_.setZero();
+
+			// Loop over all the reactions (product side)
+			for (int k = 0; k < kineticsMapXML->stoichiometry().stoichiometric_matrix_products().outerSize(); ++k)
+			{
+				// Loop over all the non-zero stoichiometric coefficients (product side) of reaction k
+				for (Eigen::SparseMatrix<double>::InnerIterator it(kineticsMapXML->stoichiometry().stoichiometric_matrix_products(), k); it; ++it)
+				{
+					nu_(it.row(), it.col()) += it.value();
+				}
+			}
+
+			// Loop over all the reactions (product side)
+			for (int k = 0; k < kineticsMapXML->stoichiometry().stoichiometric_matrix_reactants().outerSize(); ++k)
+			{
+				// Loop over all the non-zero stoichiometric coefficients (product side) of reaction k
+				for (Eigen::SparseMatrix<double>::InnerIterator it(kineticsMapXML->stoichiometry().stoichiometric_matrix_reactants(), k); it; ++it)
+				{
+					nu_(it.row(), it.col()) -= it.value();
+				}
+			}
+		}
+		//dot product
+			
+		for(unsigned int k=0;k<nr;k++)
+		{
+			for(unsigned int j=0;j<ns;j++)
+			{
+				Taur_DNS[k][celli]+=Jacob(k,j)*nu_(k,j);
+			}
+			if(Taur_DNS[k][celli]!=0)
+			{
+				Taur_DNS[k][celli]=fabs(1.0/Taur_DNS[k][celli]);
+			}
+			else
+			{
+				Info<<"Taur for reaction"<<k+1<<" is 0 "<<endl;
+				Taur_DNS[k][celli]=1.0/1e-20;
+				
+			}
+		
+		}
+			
+		// end modification
+			
+			QdotCells_DNS[celli] = QRStar_;
+			dQCells_DNS[celli] = QRStar_ * volume_cell;	
+			if (counter%(int(0.001*n2)+1) == 0)
+			{
+
+					Info << "   Accomplished: " << counter << "/" << n2<< endl;
+
+			}
+			counter++;
+			
+	}
+	counter = 0;
+	//#include "Da.H"
+
+	//Info<<"Y O2 10"<<Y_DNS[1][10]<<endl;
+					
+	//for H case
+	//writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_T_0248_le_out1.dat",n2,T_DNS_Final);
+
+	
+	
+	//Added by ali on 1 Aug 2017 to get RR
+
+scalarField tmp_Taur_i_DNS(n2,0.0);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[0][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_1_0248_AREN_out4.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[1][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_2_0248_AREN_out4.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[2][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_3_0248_AREN_out4.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[3][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_4_0248_AREN_out4.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[4][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_5_0248_AREN_out4.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[5][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_6_0248_AREN_out4.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[6][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_7_0248_AREN_out4.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[7][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_8_0248_AREN_out4.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[8][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_9_0248_AREN_out4.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[9][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_10_0248_AREN_out4.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[10][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_11_0248_AREN_out4.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[11][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_12_0248_AREN_out4.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[12][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_13_0248_AREN_out4.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[13][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_14_0248_AREN_out4.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[14][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_15_0248_AREN_out4.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[15][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_16_0248_AREN_out4.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[16][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_17_0248_AREN_out4.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[17][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_18_0248_AREN_out4.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[18][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_19_0248_AREN_out4.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[19][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_20_0248_AREN_out4.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[20][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_21_0248_AREN_out4.dat",n2,tmp_Taur_i_DNS);
+
+
+	const double tEnd = OpenSMOKE::OpenSMOKEGetCpuTime();		
+	Info << "CPU time for chemistry (EDC): " << tEnd - tStart << " s " << endl;				
+}
+*/
+/*
+{
+Info<<"part 5 "<<endl;
+//part 5
+//const int n = 148635648;//mesh size (L case DNS HAWKES)
+	const int n = 864*1008*576;//mesh size (H case DNS HAWKES)
+	const int n0 =0;
+	const int n1 =400e6;
+	const int n2 =n-400e6;
+	//scalar volume_cell = 3.375e-15;//cell volume size (L case DNS HAWKES)
+	scalar volume_cell = ((1.37*0.001)/72)*((1.37*0.001)/72)*((1.37*0.001)/72);//cell volume size (H case DNS HAWKES)
+	scalarField T_DNS_OF(n2,0.0);
+	Info<<"T_DNS made"<<endl;
+	scalarField rho_DNS_OF(n2,0.0);
+	Info<<"rho_DNS made"<<endl;
+	scalarField p_DNS_OF(n2,0.0);
+	Info<<"p_DNS made"<<endl;
+
+	List<List<scalar> > Y_DNS(11, List<scalar>(n2) ); 
+	Info<<"Y_DNS_DNS made"<<endl;
+
+
+	//scalarField T_DNS_Final(n2,0.0);
+	scalarField QdotCells_DNS(n2,0.0);
+	scalarField dQCells_DNS(n2,0.0);
+	
+	
+	
+	
+	List<List<scalar> > Taur_DNS(kineticsMapXML->NumberOfReactions(), List<scalar>(n2));
+		
+	
+		
+	
+	{
+			
+	
+
+		//float* T_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_T_0248_le.dat",n);
+		float* T_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_T_0248_le.dat",n);
+		Info<<T_DNS[10]<<endl;
+
+		for(int celli=n0;celli<n2;celli++) T_DNS_OF[celli]=T_DNS[celli+n1];
+		delete T_DNS;T_DNS=NULL;
+	
+		//float* rho_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_rho_0248_le.dat",n);
+		float* rho_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_rho_0248_le.dat",n);
+		Info<<rho_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) rho_DNS_OF[celli]=rho_DNS[celli+n1];
+		delete rho_DNS;rho_DNS=NULL;
+	
+		//float* p_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_P_0248_le.dat",n);
+		float* p_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_P_0248_le.dat",n);
+		Info<<p_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) p_DNS_OF[celli]=p_DNS[celli+n1];
+		delete p_DNS;p_DNS=NULL;
+	
+		//float* Y_CO2_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_CO2_0248_le.dat",n);
+		float* Y_CO2_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_CO2_0248_le.dat",n);
+		Info<<Y_CO2_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[8][celli]=Y_CO2_DNS[celli+n1];
+		delete Y_CO2_DNS;Y_CO2_DNS=NULL; 
+		
+		//float* Y_CO_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_CO_0248_le.dat",n);
+		float* Y_CO_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_CO_0248_le.dat",n);
+		Info<<Y_CO_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[7][celli]=Y_CO_DNS[celli+n1];
+		delete Y_CO_DNS;Y_CO_DNS=NULL;
+		
+		//float* Y_H_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_H_0248_le.dat",n);
+		float* Y_H_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_H_0248_le.dat",n);
+		Info<<Y_H_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[5][celli]=Y_H_DNS[celli+n1];//forAll(Y_H_DNS_OF,i) Y_H_DNS_OF[i]=Y_H_DNS[i];
+		delete Y_H_DNS;Y_H_DNS=NULL;
+	
+		//float* Y_H2_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_H2_0248_le.dat",n);
+		float* Y_H2_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_H2_0248_le.dat",n);
+		Info<<Y_H2_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[0][celli]=Y_H2_DNS[celli+n1];//forAll(Y_H2_DNS_OF,i) Y_H2_DNS_OF[i]=Y_H2_DNS[i];
+		delete Y_H2_DNS;Y_H2_DNS=NULL;
+	
+		//float* Y_H2O_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_H2O_0248_le.dat",n);
+		float* Y_H2O_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_H2O_0248_le.dat",n);	
+		Info<<Y_H2O_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[4][celli]=Y_H2O_DNS[celli+n1];//forAll(Y_H2O_DNS_OF,i) Y_H2O_DNS_OF[i]=Y_H2O_DNS[i];
+		delete Y_H2O_DNS;Y_H2O_DNS=NULL;
+	
+		//float* Y_HCO_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_HCO_0248_le.dat",n);
+		float* Y_HCO_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_HCO_0248_le.dat",n);
+		Info<<Y_HCO_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[9][celli]=Y_HCO_DNS[celli+n1];//forAll(Y_HCO_DNS_OF,i) Y_HCO_DNS_OF[i]=Y_HCODNS[i];
+		delete Y_HCO_DNS;Y_HCO_DNS=NULL;
+	
+		//float* Y_HO2_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_HO2_0248_le.dat",n);
+		float* Y_HO2_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_HO2_0248_le.dat",n);
+		Info<<Y_HO2_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[6][celli]=Y_HO2_DNS[celli+n1];//forAll(Y_HO2_DNS_OF,i) Y_HO2_DNS_OF[i]=Y_HO2_DNS[i];
+		delete Y_HO2_DNS;Y_HO2_DNS=NULL;
+	
+		//float* Y_O_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_O_0248_le.dat",n);
+		float* Y_O_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_O_0248_le.dat",n);
+		Info<<Y_O_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[2][celli]=Y_O_DNS[celli+n1];//forAll(Y_O_DNS_OF,i) Y_O_DNS_OF[i]=Y_O_DNS[i];
+		delete Y_O_DNS;Y_O_DNS=NULL;
+	
+		//float* Y_O2_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_O2_0248_le.dat",n);
+		float* Y_O2_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_O2_0248_le.dat",n);
+		Info<<Y_O2_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[1][celli]=Y_O2_DNS[celli+n1];//forAll(Y_O2_DNS_OF,i) Y_O2_DNS_OF[i]=Y_O2_DNS[i];
+		delete Y_O2_DNS;Y_O2_DNS=NULL;
+	
+		//float* Y_OH_DNS=readFloatBinaryFile("/scratch/Ali/RAW_DNS_L_HAWKES_DATA_littleEndian/jet_0248/jet_Y_OH_0248_le.dat",n);
+		float* Y_OH_DNS=readFloatBinaryFile("/ARCHIVIO/CHIMICA2/01/shamooni/RAW_DNS_DATA_PROCESSED/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0228/jet_Y_OH_0248_le.dat",n);	
+		Info<<Y_OH_DNS[10]<<endl;
+		for(int celli=n0;celli<n2;celli++) Y_DNS[3][celli]=Y_OH_DNS[celli+n1];//forAll(Y_OH_DNS_OF,i) Y_OH_DNS_OF[i]=Y_OH_DNS[i];
+		delete Y_OH_DNS;Y_OH_DNS=NULL;
+	
+		for(int celli=n0;celli<n2;celli++)
+		{
+			scalar sum=0.0;
+			for(int i=0;i<10;i++)
+			{
+				sum+=Y_DNS[i][celli];
+			}
+			Y_DNS[10][celli]=1.0-sum;
+		}
+
+	}
+	
+	unsigned int counter = 0;
+	const int unsigned ns = thermodynamicsMapXML->NumberOfSpecies();
+	const int unsigned nr = kineticsMapXML->NumberOfReactions();
+		
+	//OpenSMOKE::OpenSMOKEVectorDouble omegaMean(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble omegaStar_(ns);
+	//OpenSMOKE::OpenSMOKEVectorDouble xMean(ns);
+	//OpenSMOKE::OpenSMOKEVectorDouble cMean(ns);
+	//OpenSMOKE::OpenSMOKEVectorDouble h_species(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble xStar_(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble cStar_(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble RStar_(ns);
+	OpenSMOKE::OpenSMOKEVectorDouble rStar_(ns);
+	
+	
+
+		
+	double hMean, MWMean;
+	const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
+	for(int celli=n0;celli<n2;celli++)
+	{
+		const double tStart = OpenSMOKE::OpenSMOKEGetCpuTime();
+		fine_structure_ode_pfr.Set(p_DNS_OF[celli]);//fine_structure_ode_pfr.Set(pCells[celli]);
+		
+		//const double t0 = 0.;
+		//double tf = 2e-09;//Ali 0.;	
+		for(unsigned int i=0;i<ns;i++)
+				omegaStar_[i+1] = Y_DNS[i][celli];
+				
+		// Convert to mole fractions
+		thermodynamicsMapXML->MoleFractions_From_MassFractions(xStar_.GetHandle(), MWMean, omegaStar_.GetHandle());
+
+		const double TStar_ = T_DNS_OF[celli];
+		double P_Pa_=p_DNS_OF[celli];
+		double MWStar_=MWMean;
+		double cTotStar_ = P_Pa_/(PhysicalConstants::R_J_kmol * TStar_);
+		double rhoStar_ = cTotStar_*MWStar_;
+		Product(cTotStar_, xStar_, &cStar_);
+		thermodynamicsMapXML->SetTemperature(TStar_);
+		thermodynamicsMapXML->SetPressure(P_Pa_);
+		double cpStar_ = thermodynamicsMapXML->cpMolar_Mixture_From_MoleFractions(xStar_.GetHandle());
+		cpStar_/=MWStar_;
+		
+		kineticsMapXML->SetTemperature(TStar_);
+		kineticsMapXML->SetPressure(P_Pa_);
+		kineticsMapXML->ReactionEnthalpiesAndEntropies();
+		kineticsMapXML->KineticConstants();
+		kineticsMapXML->ReactionRates(cStar_.GetHandle());
+		kineticsMapXML->FormationRates(RStar_.GetHandle());
+		const double QRStar_ = kineticsMapXML->HeatRelease(RStar_.GetHandle());
+
+		
+		//Addedd by Ali 1 Aug 2017 to get RR
+
+		
+		
+		Eigen::MatrixXd Jacob(nr, ns);	
+		kineticsMapXML->DerivativesOfReactionRates(cStar_.GetHandle(), &Jacob);
+		Eigen::MatrixXd nu_(nr, ns);						
+		{
+			nu_.setZero();
+
+			// Loop over all the reactions (product side)
+			for (int k = 0; k < kineticsMapXML->stoichiometry().stoichiometric_matrix_products().outerSize(); ++k)
+			{
+				// Loop over all the non-zero stoichiometric coefficients (product side) of reaction k
+				for (Eigen::SparseMatrix<double>::InnerIterator it(kineticsMapXML->stoichiometry().stoichiometric_matrix_products(), k); it; ++it)
+				{
+					nu_(it.row(), it.col()) += it.value();
+				}
+			}
+
+			// Loop over all the reactions (product side)
+			for (int k = 0; k < kineticsMapXML->stoichiometry().stoichiometric_matrix_reactants().outerSize(); ++k)
+			{
+				// Loop over all the non-zero stoichiometric coefficients (product side) of reaction k
+				for (Eigen::SparseMatrix<double>::InnerIterator it(kineticsMapXML->stoichiometry().stoichiometric_matrix_reactants(), k); it; ++it)
+				{
+					nu_(it.row(), it.col()) -= it.value();
+				}
+			}
+		}
+		//dot product
+			
+		for(unsigned int k=0;k<nr;k++)
+		{
+			for(unsigned int j=0;j<ns;j++)
+			{
+				Taur_DNS[k][celli]+=Jacob(k,j)*nu_(k,j);
+			}
+			if(Taur_DNS[k][celli]!=0)
+			{
+				Taur_DNS[k][celli]=fabs(1.0/Taur_DNS[k][celli]);
+			}
+			else
+			{
+				Info<<"Taur for reaction"<<k+1<<" is 0 "<<endl;
+				Taur_DNS[k][celli]=1.0/1e-20;
+				
+			}
+		
+		}
+			
+		// end modification
+			
+			QdotCells_DNS[celli] = QRStar_;
+			dQCells_DNS[celli] = QRStar_ * volume_cell;	
+			if (counter%(int(0.001*n2)+1) == 0)
+			{
+
+					Info << "   Accomplished: " << counter << "/" << n2<< endl;
+
+			}
+			counter++;
+			
+	}
+	counter = 0;
+	//#include "Da.H"
+
+	//Info<<"Y O2 10"<<Y_DNS[1][10]<<endl;
+					
+	//for H case
+	//writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_T_0248_le_out1.dat",n2,T_DNS_Final);
+
+	
+	
+	//Added by ali on 1 Aug 2017 to get RR
+
+scalarField tmp_Taur_i_DNS(n2,0.0);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[0][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_1_0248_AREN_out5.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[1][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_2_0248_AREN_out5.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[2][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_3_0248_AREN_out5.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[3][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_4_0248_AREN_out5.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[4][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_5_0248_AREN_out5.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[5][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_6_0248_AREN_out5.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[6][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_7_0248_AREN_out5.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[7][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_8_0248_AREN_out5.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[8][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_9_0248_AREN_out5.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[9][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_10_0248_AREN_out5.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[10][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_11_0248_AREN_out5.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[11][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_12_0248_AREN_out5.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[12][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_13_0248_AREN_out5.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[13][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_14_0248_AREN_out5.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[14][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_15_0248_AREN_out5.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[15][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_16_0248_AREN_out5.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[16][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_17_0248_AREN_out5.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[17][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_18_0248_AREN_out5.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[18][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_19_0248_AREN_out5.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[19][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_20_0248_AREN_out5.dat",n2,tmp_Taur_i_DNS);
+	for(int celli=n0;celli<n2;celli++) tmp_Taur_i_DNS[celli]=Taur_DNS[20][celli];
+	writedoubleBinaryFile("/scratch/Ali/RAW_DNS_HAWKES_DATA_littleEndian/HIGH/jet_0248_temp/jet_Taur_21_0248_AREN_out5.dat",n2,tmp_Taur_i_DNS);
+
+
+	const double tEnd = OpenSMOKE::OpenSMOKEGetCpuTime();		
+	Info << "CPU time for chemistry (EDC): " << tEnd - tStart << " s " << endl;				
+}
+*/
